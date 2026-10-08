@@ -96,6 +96,17 @@ input[type="search"], input[type="text"], input[type="number"], input[type="date
 textarea { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; min-height: 220px; resize: vertical; }
 .check { display: flex; gap: 8px; align-items: flex-start; font-size: .9rem; color: var(--ink-2); cursor: pointer; }
 .check input { margin-top: 4px; }
+.tp { display: grid; font-size: .84rem; }
+.tp-sum { text-transform: none; letter-spacing: 0; font-weight: 400; margin-left: 4px; }
+.tp-quick { display: flex; gap: 6px; margin-bottom: 6px; }
+.tp-quick select { flex: 1; min-width: 0; font-size: .84rem; }
+.tp-quick .btn { padding: 4px 10px; }
+.tp-row { display: flex; justify-content: space-between; align-items: center; gap: 6px; padding: 4px 0; border-bottom: 1px solid var(--line); }
+.tp .check { font-size: .84rem; }
+.tp b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-2); margin-right: 4px; }
+.tp-x { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; font: inherit; font-size: .76rem; padding: 2px 7px; cursor: pointer; color: var(--ink-2); white-space: nowrap; flex: none; }
+.tp-x:hover { border-color: var(--blue); color: var(--blue); }
+.tp-list { display: grid; gap: 4px; padding: 6px 0 8px 22px; border-bottom: 1px solid var(--line); }
 .note { font-size: .84rem; color: var(--muted); }
 .mono { font-family: var(--font-mono); font-size: .82rem; }
 
@@ -288,11 +299,14 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
         <label class="field">Search
           <input type="search" id="f-q" placeholder="e.g. buffer stock, Gini, tariff">
         </label>
-        <div><p class="fieldset-title">Syllabus unit</p><div class="chips" id="f-units"></div></div>
-        <label class="field">Topic
-          <select id="f-topic"></select>
+        <div><p class="fieldset-title">Topics <span class="tp-sum" id="f-tp-sum"></span></p><div class="tp" id="f-tp"></div></div>
+        <label class="field">Show a question when
+          <select id="f-match">
+            <option value="any">Any of its topics is ticked</option>
+            <option value="main">Its main topic is ticked</option>
+            <option value="all">Every topic it is tagged with is ticked (covered so far)</option>
+          </select>
         </label>
-        <label class="check"><input type="checkbox" id="f-main"> Main topic only</label>
         <div><p class="fieldset-title">Year</p><div class="chips" id="f-years"></div></div>
         <div><p class="fieldset-title">Series</p><div class="chips" id="f-series"></div></div>
         <label class="field">Paper
@@ -400,9 +414,15 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
         </div>
         <div class="card">
           <h2>Fill automatically</h2>
-          <label class="field">Topics
-            <select id="a-unit"></select>
+          <div><p class="fieldset-title">Topics covered so far <span class="tp-sum" id="a-tp-sum"></span></p><div class="tp" id="a-tp"></div></div>
+          <label class="field">Use a question when
+          <select id="a-match">
+            <option value="all">Every topic it is tagged with is ticked (covered so far)</option>
+            <option value="main">Its main topic is ticked</option>
+            <option value="any">Any of its topics is ticked</option>
+          </select>
           </label>
+          <button class="btn" id="a-browse" type="button">See these questions in Browse</button>
           <div class="grid2">
             <label class="field">Target marks
               <input type="number" id="a-target" min="4" max="120" step="1" value="40">
@@ -457,7 +477,14 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
     <div class="practice">
       <aside class="card">
         <h2>Pick a question</h2>
-        <label class="field">Topic <select id="p-topic"></select></label>
+        <div><p class="fieldset-title">Topics covered so far <span class="tp-sum" id="p-tp-sum"></span></p><div class="tp" id="p-tp"></div></div>
+        <label class="field">Use a question when
+          <select id="p-match">
+            <option value="all">Every topic it is tagged with is ticked (covered so far)</option>
+            <option value="main">Its main topic is ticked</option>
+            <option value="any">Any of its topics is ticked</option>
+          </select>
+        </label>
         <label class="field">Question type
           <select id="p-type">
             <option value="any">Any</option>
@@ -530,7 +557,7 @@ const isOld = q => q.year <= 2022;  // 2020–22 syllabus papers
 $('#mast-stats').textContent = `${PAPERS.length} papers · ${Q.length} question parts · ${PAPERS[0].short.split(' · ')[0]} to ${PAPERS[PAPERS.length - 1].short.split(' · ')[0]}`;
 
 // ---------- state ----------
-const blankFilters = () => ({ q: '', units: [], topic: '', main: false, years: [], series: [], paper: '', sections: [], marks: [], cmd: '', diagram: false, er: false, usable: false, intest: false, ids: null, idsLabel: '' });
+const blankFilters = () => ({ q: '', topics: [], match: 'any', years: [], series: [], paper: '', sections: [], marks: [], cmd: '', diagram: false, er: false, usable: false, intest: false, ids: null, idsLabel: '' });
 const st = { tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
 const qKey = q => q.paper_ref + '|' + q.question;
 const SIBS = {}; for (const q of Q) (SIBS[qKey(q)] = SIBS[qKey(q)] || []).push(q.id);
@@ -550,12 +577,65 @@ function showTab(name) {
   st.tab = name;
   for (const b of $$('.tab')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
   for (const p of $$('.pane')) p.hidden = p.id !== 'pane-' + name;
-  if (name === 'build') renderBuild();
+  if (name === 'build') { aTP.render(); renderBuild(); }
+  if (name === 'practice') pTP.render();
   if (name === 'patterns' && !st.patternsDone) { renderPatterns(); st.patternsDone = true; }
   if (name === 'practice' && !st.practiceDone) { renderPractice(); st.practiceDone = true; }
   try { history.replaceState(null, '', '#' + name); } catch (e) { /* ignore */ }
 }
 $$('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// ---------- topic picker: tick a whole unit, single topics, or everything up to a topic ----------
+const TOPIC_CODES = Object.keys(TOPICS);  // syllabus order
+const UNIT_OF = c => c.split('.')[0];
+const unitCodes = u => TOPIC_CODES.filter(c => UNIT_OF(c) === u);
+function topicMatch(q, sel, mode) {
+  if (!sel.length) return true;
+  if (mode === 'main') return sel.includes(q.primary_topic);
+  if (mode === 'all') return q.topics.every(t => sel.includes(t));
+  return q.topics.some(t => sel.includes(t));
+}
+function topicSummary(sel) {
+  if (!sel.length) return 'all topics';
+  const parts = [];
+  for (const u of Object.keys(UNITS)) {
+    const cs = unitCodes(u); const k = cs.filter(c => sel.includes(c));
+    if (k.length === cs.length) parts.push('Unit ' + u); else if (k.length) parts.push(k.join(', '));
+  }
+  return parts.join(' · ');
+}
+function topicPicker(el, get, set, onChange) {
+  const open = new Set();
+  function render() {
+    const sel = new Set(get());
+    let h = `<div class="tp-quick"><select class="tp-upto" aria-label="Tick everything up to a topic"><option value="">Tick everything up to…</option>${TOPIC_CODES.map(c => `<option value="${c}">${c} ${esc(TOPICS[c])}</option>`).join('')}</select><button type="button" class="btn tp-clear"${sel.size ? '' : ' disabled'}>Clear</button></div>`;
+    for (const u of Object.keys(UNITS)) {
+      const cs = unitCodes(u); const k = cs.filter(c => sel.has(c)).length; const o = open.has(u);
+      h += `<div class="tp-row"><label class="check"><input type="checkbox" data-u="${u}"${k === cs.length ? ' checked' : ''}><span><b>${u}</b>${esc(UNIT_SHORT[u] || UNITS[u])}</span></label>` +
+        `<button type="button" class="tp-x" data-x="${u}" aria-expanded="${o}" title="Choose single topics in unit ${u}">${k}/${cs.length} ${o ? '▾' : '▸'}</button></div>` +
+        `<div class="tp-list"${o ? '' : ' hidden'}>${cs.map(c => `<label class="check"><input type="checkbox" data-c="${c}"${sel.has(c) ? ' checked' : ''}><span><b>${c}</b>${esc(TOPICS[c])}</span></label>`).join('')}</div>`;
+    }
+    el.innerHTML = h;
+    for (const u of Object.keys(UNITS)) { const k = unitCodes(u).filter(c => sel.has(c)).length; el.querySelector(`[data-u="${u}"]`).indeterminate = k > 0 && k < unitCodes(u).length; }
+  }
+  const commit = sel => { set(TOPIC_CODES.filter(c => sel.has(c))); render(); onChange(); };
+  el.addEventListener('change', e => {
+    const t = e.target; const sel = new Set(get());
+    if (t.dataset.u) { for (const c of unitCodes(t.dataset.u)) t.checked ? sel.add(c) : sel.delete(c); commit(sel); }
+    else if (t.dataset.c) { t.checked ? sel.add(t.dataset.c) : sel.delete(t.dataset.c); commit(sel); }
+    else if (t.classList.contains('tp-upto') && t.value) commit(new Set(TOPIC_CODES.slice(0, TOPIC_CODES.indexOf(t.value) + 1)));
+  });
+  el.addEventListener('click', e => {
+    const x = e.target.closest('[data-x]');
+    if (x) { open.has(x.dataset.x) ? open.delete(x.dataset.x) : open.add(x.dataset.x); render(); }
+    if (e.target.closest('.tp-clear')) commit(new Set());
+  });
+  render();
+  return { render };
+}
+// one 'covered so far' selection, shared by the Test builder and Practice
+let covered = store.get('covered', []).filter(c => TOPICS[c]);
+let coveredMatch = store.get('covered-match', 'all');
 
 // ---------- filter controls ----------
 function chipGroup(el, items, key) {
@@ -565,50 +645,27 @@ function chipGroup(el, items, key) {
     const v = typeof st.f[key][0] === 'number' || key === 'marks' || key === 'years' ? Number(b.dataset.v) : b.dataset.v;
     const arr = st.f[key]; const i = arr.indexOf(v);
     if (i >= 0) arr.splice(i, 1); else arr.push(v);
-    if (key === 'units') fillTopicSelect();
     syncControls(); renderResults(true);
   });
 }
 const UNIT_SHORT = { 1: 'Basic ideas', 2: 'Price system', 3: 'Micro intervention', 4: 'Macroeconomy', 5: 'Macro intervention', 6: 'International' };
-chipGroup($('#f-units'), Object.keys(UNITS).map(u => [u, `${u} ${UNIT_SHORT[u] || UNITS[u]}`]), 'units');
 chipGroup($('#f-years'), YEARS.map(y => [y, String(y)]), 'years');
 chipGroup($('#f-series'), SERIES.map(s => [s, s]), 'series');
 chipGroup($('#f-sections'), [['data', 'Data response'], ['micro', 'Micro essay'], ['macro', 'Macro essay']], 'sections');
 chipGroup($('#f-marks'), [...new Set(Q.map(q => q.marks))].sort((a, b) => a - b).map(m => [m, String(m)]), 'marks');
-$$('#f-units .chipbtn').forEach(b => { b.title = UNITS[b.dataset.v]; });
 
-function topicOptions(units) {
-  let html = '<option value="">All topics</option>';
-  for (const u of Object.keys(UNITS)) {
-    if (units && units.length && !units.includes(u)) continue;
-    html += `<optgroup label="${esc(u + ' ' + UNITS[u])}">`;
-    for (const c of Object.keys(TOPICS)) if (c.split('.')[0] === u) {
-      const n = Q.filter(q => q.topics.includes(c)).length;
-      html += `<option value="${c}">${c} ${esc(TOPICS[c])} (${n})</option>`;
-    }
-    html += '</optgroup>';
-  }
-  return html;
-}
-function fillTopicSelect() {
-  const sel = $('#f-topic');
-  sel.innerHTML = topicOptions(st.f.units);
-  if (st.f.topic && st.f.units.length && !st.f.units.includes(st.f.topic.split('.')[0])) st.f.topic = '';
-  sel.value = st.f.topic;
-}
-fillTopicSelect();
+const fTP = topicPicker($('#f-tp'), () => st.f.topics, v => { st.f.topics = v; }, () => renderResults(true));
 $('#f-paper').innerHTML = '<option value="">All papers</option>' + [...PAPERS].reverse().map(p => `<option value="${p.ref}">${p.ref} (${p.series} ${p.year})</option>`).join('');
 const CMDS = [...new Set(Q.map(q => q.command_word))].sort();
 $('#f-cmd').innerHTML = '<option value="">Any command word</option>' + CMDS.map(c => `<option>${esc(c)}</option>`).join('');
 
 $('#f-q').addEventListener('input', e => { st.f.q = e.target.value; renderResults(true); });
-$('#f-topic').addEventListener('change', e => { st.f.topic = e.target.value; renderResults(true); });
-$('#f-main').addEventListener('change', e => { st.f.main = e.target.checked; renderResults(true); });
+$('#f-match').addEventListener('change', e => { st.f.match = e.target.value; renderResults(true); });
 $('#f-paper').addEventListener('change', e => { st.f.paper = e.target.value; renderResults(true); });
 $('#f-cmd').addEventListener('change', e => { st.f.cmd = e.target.value; renderResults(true); });
 for (const k of ['diagram', 'er', 'usable', 'intest']) $('#f-' + k).addEventListener('change', e => { st.f[k] = e.target.checked; renderResults(true); });
 $('#r-sort').addEventListener('change', e => { st.sort = e.target.value; renderResults(true); });
-$('#f-clear').addEventListener('click', () => { st.f = blankFilters(); fillTopicSelect(); syncControls(); renderResults(true); });
+$('#f-clear').addEventListener('click', () => { st.f = blankFilters(); syncControls(); renderResults(true); });
 $('#ids-clear').addEventListener('click', () => { st.f.ids = null; renderResults(true); });
 $('#filters-toggle').addEventListener('click', () => {
   const f = $('#filters'); const c = f.classList.toggle('collapsed');
@@ -619,10 +676,10 @@ if (window.matchMedia('(max-width: 900px)').matches) { $('#filters').classList.a
 
 function syncControls() {
   const f = st.f;
-  $('#f-q').value = f.q; $('#f-topic').value = f.topic; $('#f-main').checked = f.main; $('#f-paper').value = f.paper; $('#f-cmd').value = f.cmd;
+  $('#f-q').value = f.q; $('#f-match').value = f.match; fTP.render(); $('#f-paper').value = f.paper; $('#f-cmd').value = f.cmd;
   for (const k of ['diagram', 'er', 'usable', 'intest']) $('#f-' + k).checked = f[k];
   const sync = (id, arr) => $$(id + ' .chipbtn').forEach(b => b.setAttribute('aria-pressed', String(arr.map(String).includes(b.dataset.v))));
-  sync('#f-units', f.units); sync('#f-years', f.years); sync('#f-series', f.series); sync('#f-sections', f.sections); sync('#f-marks', f.marks);
+  sync('#f-years', f.years); sync('#f-series', f.series); sync('#f-sections', f.sections); sync('#f-marks', f.marks);
 }
 
 // ---------- browse ----------
@@ -633,9 +690,7 @@ function matches(q) {
     const hay = (q.question_text + ' ' + q.key_concepts.join(' ') + ' ' + (q.context || '') + ' ' + q.paper_ref + ' ' + (q.stimulus_title || '')).toLowerCase();
     if (!f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
   }
-  const tops = f.main ? [q.primary_topic] : q.topics;
-  if (f.units.length && !tops.some(t => f.units.includes(t.split('.')[0]))) return false;
-  if (f.topic && !tops.includes(f.topic)) return false;
+  if (!topicMatch(q, f.topics, f.match)) return false;
   if (f.years.length && !f.years.includes(q.year)) return false;
   if (f.series.length && !f.series.includes(q.series)) return false;
   if (f.paper && q.paper_ref !== f.paper) return false;
@@ -717,7 +772,7 @@ function panelHtml(q, act) {
 }
 function onCardClick(e) {
   const tagBtn = e.target.closest('.tag[data-topic]');
-  if (tagBtn) { st.f = blankFilters(); st.f.topic = tagBtn.dataset.topic; fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
+  if (tagBtn) { st.f = blankFilters(); st.f.topics = [tagBtn.dataset.topic]; syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const art = b.closest('.q'); const q = byId[art.dataset.id]; const act = b.dataset.act;
   if (act === 'add') { toggleBasket(q.id); refreshAddButtons(); return; }
@@ -735,6 +790,7 @@ function renderResults(reset) {
   if (reset) st.shown = 30;
   const list = sorted(Q.filter(matches));
   const marks = list.reduce((s, q) => s + q.marks, 0);
+  $('#f-tp-sum').textContent = st.f.topics.length ? '· ' + topicSummary(st.f.topics) : '';
   $('#r-count').innerHTML = `${list.length} question part${list.length === 1 ? '' : 's'} <span>· ${marks} marks</span>`;
   $('#ids-banner').hidden = !st.f.ids; $('#ids-banner-text').textContent = st.f.ids ? 'Showing ' + st.f.idsLabel : '';
   $('#r-list').innerHTML = list.length ? list.slice(0, st.shown).map(q => card(q)).join('') : '<div class="empty">No question parts match these filters. Try removing one.</div>';
@@ -750,7 +806,6 @@ function toggleBasket(id) {
 }
 
 // ---------- patterns ----------
-const UNIT_OF = c => c.split('.')[0];
 function cellStats() {
   const m = {};
   for (const c of Object.keys(TOPICS)) { m[c] = {}; for (const p of PAPERS) m[c][p.ref] = { marks: 0, mainParts: 0, parts: 0 }; }
@@ -807,8 +862,8 @@ $('#heat').addEventListener('mousemove', e => {
 $('#heat').addEventListener('mouseleave', () => { tip.hidden = true; });
 $('#heat').addEventListener('click', e => {
   const td = e.target.closest('td.h'); if (!td) return;
-  st.f = blankFilters(); st.f.topic = td.dataset.t; st.f.paper = td.dataset.p; st.f.main = st.heatMode === 'marks';
-  fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+  st.f = blankFilters(); st.f.topics = [td.dataset.t]; st.f.paper = td.dataset.p; st.f.match = st.heatMode === 'marks' ? 'main' : 'any';
+  syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
 });
 $('#heat-mode').addEventListener('click', e => {
   const b = e.target.closest('.chipbtn'); if (!b) return;
@@ -863,9 +918,9 @@ for (const [id, key] of [['#freq-scope', 'freqScope'], ['#freq-sort', 'freqSort'
 });
 $('#freq').addEventListener('click', e => {
   const tr = e.target.closest('tr[data-t]'); if (!tr) return;
-  st.f = blankFilters(); st.f.topic = tr.dataset.t; st.f.main = true;
+  st.f = blankFilters(); st.f.topics = [tr.dataset.t]; st.f.match = 'main';
   if (st.freqScope === 'new') st.f.years = YEARS.filter(y => y >= 2023);
-  fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+  syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
 });
 
 function bars(el, rows, unit) {
@@ -945,7 +1000,20 @@ $('#clusters').addEventListener('click', e => {
 const today = new Date(); $('#d-date').value = today.toISOString().slice(0, 10);
 for (const id of ['d-title', 'd-class', 'd-instr']) { const v = store.get(id, null); if (v != null) $('#' + id).value = v; }
 for (const id of ['d-title', 'd-class', 'd-date', 'd-instr', 'd-extracts', 'd-lines']) $('#' + id).addEventListener('input', () => { if (['d-title', 'd-class', 'd-instr'].includes(id)) store.set(id, $('#' + id).value); renderPreview(); });
-$('#a-unit').innerHTML = topicOptions().replace('All topics', 'Any topic') + Object.keys(UNITS).map(u => `<option value="unit:${u}">Whole of unit ${u}: ${esc(UNITS[u])}</option>`).join('');
+function coveredSum() {
+  const n = Q.filter(q => topicMatch(q, covered, coveredMatch)).length;
+  const t = covered.length ? `· ${topicSummary(covered)} · ${n} parts` : '· none ticked, so any topic';
+  for (const id of ['#a-tp-sum', '#p-tp-sum']) $(id).textContent = t;
+}
+const saveCovered = () => { store.set('covered', covered); store.set('covered-match', coveredMatch); coveredSum(); };
+const getCov = () => covered, setCov = v => { covered = v; };
+const aTP = topicPicker($('#a-tp'), getCov, setCov, saveCovered);
+$('#a-match').value = coveredMatch;
+$('#a-match').addEventListener('change', e => { coveredMatch = e.target.value; $('#p-match').value = coveredMatch; saveCovered(); });
+$('#a-browse').addEventListener('click', () => {
+  st.f = blankFilters(); st.f.topics = covered.slice(); st.f.match = coveredMatch;
+  syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+});
 
 function groupsOf(ids) {
   const groups = [];
@@ -1033,18 +1101,20 @@ function renderPreview() {
 
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
 $('#a-go').addEventListener('click', () => {
-  const sel = $('#a-unit').value; const target = Math.max(1, Number($('#a-target').value) || 40);
+  const target = Math.max(1, Number($('#a-target').value) || 40);
   const format = $('#a-format').value; const usable = $('#a-usable').checked; const noRep = $('#a-repeats').checked;
-  const topicOk = q => !sel || (sel.startsWith('unit:') ? q.topics.some(t => UNIT_OF(t) === sel.slice(5)) : q.topics.includes(sel));
+  const topicOk = q => topicMatch(q, covered, coveredMatch);
+  // a whole question counts when all its parts fit (or, in 'any' mode, when one does)
+  const groupOk = k => coveredMatch === 'any' ? SIBS[k].some(id => topicOk(byId[id])) : SIBS[k].every(id => topicOk(byId[id]));
   const taken = new Set(basket);
   const near = new Set(basket.flatMap(id => byId[id].similar_to.map(s => s.id)));
   const units = [];
   if (format === 'essay' || format === 'mixed') {
-    const essayKeys = new Set(Q.filter(q => q.section !== 'A' && topicOk(q)).map(q => q.paper_ref + '|' + q.question));
+    const essayKeys = new Set(Q.filter(q => q.section !== 'A').map(qKey).filter(groupOk));
     for (const k of essayKeys) { const parts = Q.filter(q => q.paper_ref + '|' + q.question === k); units.push(parts); }
   }
   if (format === 'datawhole') {
-    for (const k of new Set(Q.filter(q => q.section === 'A' && topicOk(q)).map(qKey))) units.push(SIBS[k].map(id => byId[id]));
+    for (const k of new Set(Q.filter(q => q.section === 'A').map(qKey))) if (groupOk(k)) units.push(SIBS[k].map(id => byId[id]));
   } else if (format !== 'essay') for (const q of Q) if (q.section === 'A' && topicOk(q)) units.push([q]);
   let total = basket.reduce((s, id) => s + byId[id].marks, 0); const start = total; const added = [];
   for (const u of shuffle(units)) {
@@ -1204,15 +1274,17 @@ $('#copy-text').addEventListener('click', async () => {
 let sample = null;
 let pState = { id: store.get('p-current', null), answer: '', result: null, revealed: false };
 let pHist = store.get('p-hist', []);
+const pTP = topicPicker($('#p-tp'), getCov, setCov, saveCovered);
+$('#p-match').value = coveredMatch;
+$('#p-match').addEventListener('change', e => { coveredMatch = e.target.value; $('#a-match').value = coveredMatch; saveCovered(); });
+coveredSum();
 function practicePool() {
-  const sel = $('#p-topic').value; const type = $('#p-type').value;
-  return Q.filter(q => !isUnusable(q) &&
-    (!sel || (sel.startsWith('unit:') ? q.topics.some(t => UNIT_OF(t) === sel.slice(5)) : q.topics.includes(sel))) &&
+  const type = $('#p-type').value;
+  return Q.filter(q => !isUnusable(q) && topicMatch(q, covered, coveredMatch) &&
     (type === 'any' || (type === 'short' ? q.section === 'A' : q.marks === Number(type))));
 }
 function renderPractice() {
-  $('#p-topic').innerHTML = topicOptions().replace('All topics', 'Any topic') + Object.keys(UNITS).map(u => `<option value="unit:${u}">Whole of unit ${u}: ${esc(UNITS[u])}</option>`).join('');
-  $('#p-topic').value = store.get('p-topic', ''); $('#p-type').value = store.get('p-type', 'any');
+  $('#p-type').value = store.get('p-type', 'any');
   if (!pState.id || !byId[pState.id]) pickPractice(); else drawPractice();
   drawHist();
 }
@@ -1225,7 +1297,7 @@ function pickPractice() {
   store.set('p-current', pState.id);
   drawPractice();
 }
-$('#p-new').addEventListener('click', () => { store.set('p-topic', $('#p-topic').value); store.set('p-type', $('#p-type').value); pickPractice(); });
+$('#p-new').addEventListener('click', () => { store.set('p-type', $('#p-type').value); pickPractice(); });
 function drawPractice() {
   const el = $('#p-main');
   const q = byId[pState.id];

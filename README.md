@@ -15,9 +15,9 @@ A searchable database of Cambridge International AS Level Economics **Paper 2 (D
 
 | Tab | What it does |
 | --- | --- |
-| Browse questions | Filter by unit, topic, year, series, paper, section (data response / micro essay / macro essay), marks, command word; open the mark scheme, examiner comment, source extract and similar questions from other papers |
+| Browse questions | Filter by topic (tick whole units or single topics), year, series, paper, section (data response / micro essay / macro essay), marks, command word; open the mark scheme, examiner comment, source extract and similar questions from other papers |
 | Patterns | Topic × paper heatmap, most and least examined topics, command words, what examiners keep criticising, recurring questions, examiner key messages |
-| Test builder | Pick questions or fill a test automatically by topic and mark total; download the paper and mark scheme as Word files (A4, 1.5 cm margins, page numbers) |
+| Test builder | Add whole questions or single parts, or fill a test automatically from the topics covered so far; download the paper and mark scheme as Word files (A4, 1.5 cm margins, page numbers) |
 | Practice | Random question by topic; write an answer, then self-mark against the mark scheme and examiner comment. History is kept in the browser |
 
 Marking with Claude only works in the Claude-hosted version of the page. On GitHub Pages, students mark their own answers against the mark scheme.
