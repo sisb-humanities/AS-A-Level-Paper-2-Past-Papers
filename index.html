@@ -162,6 +162,26 @@ td.last.never { color: var(--warn-ink); font-weight: 700; }
 .legend i { width: 22px; height: 12px; border-radius: 2px; display: inline-block; }
 .tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); padding: 7px 10px; border-radius: 6px; font-size: .8rem;
   max-width: 300px; line-height: 1.4; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+table.freq { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
+table.freq th, table.freq td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.freq thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; text-align: left; white-space: nowrap; vertical-align: bottom; }
+table.freq thead th.yc { text-align: center; padding: 6px 1px; }
+table.freq th.t { text-align: left; font-weight: 400; min-width: 200px; }
+table.freq th.t b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-2); margin-right: 6px; }
+table.freq tr.unit th { padding: 12px 8px 4px; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+table.freq tbody tr[data-t] { cursor: pointer; }
+table.freq tbody tr[data-t]:hover { background: var(--surface-2); }
+.fbar { display: grid; grid-template-columns: minmax(80px, 140px) 3.2em; gap: 8px; align-items: center; }
+.fbar .track { height: 12px; background: var(--surface-2); border-radius: 3px; }
+.fbar .fill { height: 100%; background: var(--blue); border-radius: 0 3px 3px 0; }
+.fbar .p { text-align: right; font-weight: 700; }
+table.freq td.n { text-align: right; white-space: nowrap; }
+table.freq td.yc { padding: 3px 1px; }
+table.freq td.yc span { display: block; width: 34px; height: 24px; line-height: 24px; text-align: center; border-radius: 3px; font-size: .74rem; margin: 0 auto; }
+.yc .h0 { background: var(--h0); color: var(--muted); } .yc .h1 { background: var(--h1); color: var(--h1i); } .yc .h2 { background: var(--h2); color: var(--h2i); }
+.yc .h3 { background: var(--h3); color: var(--h3i); } .yc .h4 { background: var(--h4); color: var(--h4i); } .yc .h5 { background: var(--h5); color: var(--h5i); }
+.tier { font-size: .76rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; background: var(--surface-2); color: var(--ink-2); }
+.tier.t4 { background: var(--blue); color: #fff; } .tier.t3 { background: var(--h3); color: var(--h3i); } .tier.t0 { color: var(--warn-ink); }
 .two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
 .bars { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
 .bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 10px; align-items: center; font-size: .86rem; }
@@ -185,6 +205,17 @@ details.er p, details.er ul { max-width: 85ch; }
 .basket { display: grid; gap: 6px; }
 .b-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .b-item .t { font-size: .88rem; }
+.b-group { display: grid; gap: 4px; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.b-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.b-head .t { font-size: .88rem; } .b-head .t .mono { color: var(--ink-2); }
+.b-head .ctl, .b-part { display: flex; gap: 4px; }
+.b-head .ctl button, .b-part button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); flex: none; }
+.b-head .ctl button:disabled { opacity: .4; cursor: default; }
+.b-part { justify-content: space-between; align-items: center; gap: 8px; padding-left: 14px; font-size: .82rem; color: var(--ink-2); }
+.b-part button { width: 24px; height: 24px; }
+.b-missing { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding-left: 14px; font-size: .8rem; }
+.b-missing button { border: 1px dashed var(--muted); background: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--ink-2); font: inherit; }
+.b-missing button:hover, .b-part button:hover, .b-head .ctl button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
 .b-item .t .mono { color: var(--ink-2); }
 .b-item .ctl { display: flex; gap: 4px; }
 .b-item .ctl button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); }
@@ -305,6 +336,24 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
     <div class="facts" id="facts"></div>
 
     <div class="section-h">
+      <h2>How often each topic comes up</h2>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div class="chips" id="freq-scope">
+          <button class="chipbtn" data-v="all" aria-pressed="true">All papers</button>
+          <button class="chipbtn" data-v="new" aria-pressed="false">Current syllabus (2023 on)</button>
+        </div>
+        <div class="chips" id="freq-sort">
+          <button class="chipbtn" data-v="freq" aria-pressed="true">Most frequent first</button>
+          <button class="chipbtn" data-v="marks" aria-pressed="false">Most marks first</button>
+          <button class="chipbtn" data-v="syl" aria-pressed="false">Syllabus order</button>
+        </div>
+      </div>
+    </div>
+    <p class="note" id="freq-note" style="margin:0 0 10px;max-width:90ch"></p>
+    <div class="bars" style="margin-bottom:12px"><div class="note">Share of all marks by syllabus unit (as the main topic)</div><div id="unit-bars" style="display:grid;gap:6px"></div></div>
+    <div class="heat-wrap"><table class="freq" id="freq"></table></div>
+
+    <div class="section-h">
       <h2>Topic coverage by paper</h2>
       <div class="chips" id="heat-mode">
         <button class="chipbtn" data-mode="marks" aria-pressed="true">Marks as main topic</button>
@@ -341,8 +390,9 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
           <h2>Your test</h2>
           <div class="totals">
             <div><b id="t-marks">0</b><span>marks</span></div>
-            <div><b id="t-parts">0</b><span>question parts</span></div>
-            <div><b id="t-mins">0</b><span>minutes at exam pace</span></div>
+            <div><b id="t-qs">0</b><span>questions</span></div>
+            <div><b id="t-parts">0</b><span>parts</span></div>
+            <div title="About 2 minutes per mark, as in the exam"><b id="t-mins">0</b><span>minutes</span></div>
           </div>
           <div class="basket" id="basket"></div>
           <p class="note" id="basket-empty">Add questions from Browse questions, or fill the test automatically below.</p>
@@ -360,7 +410,8 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
             <label class="field">Question types
               <select id="a-format">
                 <option value="essay">Essays (8 + 12 pairs)</option>
-                <option value="data">Data response parts</option>
+                <option value="datawhole">Whole data response questions</option>
+                <option value="data">Single data response parts</option>
                 <option value="mixed">Mixed</option>
               </select>
             </label>
@@ -481,8 +532,17 @@ $('#mast-stats').textContent = `${PAPERS.length} papers · ${Q.length} question 
 // ---------- state ----------
 const blankFilters = () => ({ q: '', units: [], topic: '', main: false, years: [], series: [], paper: '', sections: [], marks: [], cmd: '', diagram: false, er: false, usable: false, intest: false, ids: null, idsLabel: '' });
 const st = { tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
+const qKey = q => q.paper_ref + '|' + q.question;
+const SIBS = {}; for (const q of Q) (SIBS[qKey(q)] = SIBS[qKey(q)] || []).push(q.id);
+// keep every part of a question together, in paper order; questions stay in the order they were first added
+function normaliseBasket() {
+  const order = [], seen = {};
+  for (const id of basket) { const k = qKey(byId[id]); if (!seen[k]) { seen[k] = new Set(); order.push(k); } seen[k].add(id); }
+  basket = order.flatMap(k => SIBS[k].filter(id => seen[k].has(id)));
+}
 let basket = store.get('basket', []).filter(id => byId[id]);
-const saveBasket = () => { store.set('basket', basket); $('#basket-count').textContent = basket.length; };
+normaliseBasket();
+const saveBasket = () => { normaliseBasket(); store.set('basket', basket); $('#basket-count').textContent = basket.length; };
 
 // ---------- tabs ----------
 function showTab(name) {
@@ -614,10 +674,34 @@ function card(q, opts = {}) {
     <div class="acts">
       ${btn('ms', 'Mark scheme')}${btn('er', 'Examiner report', !!q.examiner_comment)}${btn('src', 'Source extract', q.section === 'A' && !!(D.stimuli[stimKey(q)] || {}).text)}${btn('sim', `Similar (${q.similar_to.length})`, q.similar_to.length > 0)}
       <span class="spacer"></span>
-      ${opts.noAdd ? '' : `<button class="btn add" data-act="add" aria-pressed="${inTest}">${inTest ? 'In test ✓' : 'Add to test'}</button>`}
+      ${opts.noAdd ? '' : addBtns(q)}
     </div>
     <div class="panel" data-panel hidden></div>
   </article>`;
+}
+function wholeLabel(q) {
+  const ids = SIBS[qKey(q)]; const all = ids.every(id => basket.includes(id));
+  const parts = ids.map(id => byId[id]); const m = parts.reduce((s, p) => s + p.marks, 0);
+  return [all, all ? `All of Q${q.question} in test ✓` : `Add all of Q${q.question} ${partLabel(parts[0])}–${partLabel(parts[parts.length - 1]).replace(/\(i+v?\)$/, '')} [${m}]`];
+}
+function addBtns(q) {
+  const inTest = basket.includes(q.id);
+  let h = `<button class="btn add" data-act="add" aria-pressed="${inTest}">${inTest ? 'Part in test ✓' : 'Add this part'}</button>`;
+  if (SIBS[qKey(q)].length > 1) { const [all, label] = wholeLabel(q); h = `<button class="btn add" data-act="addq" aria-pressed="${all}" title="Add or remove every part of this question">${esc(label)}</button>` + h; }
+  return h;
+}
+function refreshAddButtons() {
+  for (const art of $$('article.q')) {
+    const q = byId[art.dataset.id]; const a = art.querySelector('[data-act="add"]'); if (!a) continue;
+    const on = basket.includes(q.id); a.setAttribute('aria-pressed', String(on)); a.textContent = on ? 'Part in test ✓' : 'Add this part';
+    const w = art.querySelector('[data-act="addq"]'); if (w) { const [all, label] = wholeLabel(q); w.setAttribute('aria-pressed', String(all)); w.textContent = label; }
+  }
+}
+function toggleQuestion(q) {
+  const ids = SIBS[qKey(q)];
+  if (ids.every(id => basket.includes(id))) basket = basket.filter(id => !ids.includes(id));
+  else for (const id of ids) if (!basket.includes(id)) basket.push(id);
+  saveBasket();
 }
 function panelHtml(q, act) {
   if (act === 'ms') {
@@ -636,7 +720,8 @@ function onCardClick(e) {
   if (tagBtn) { st.f = blankFilters(); st.f.topic = tagBtn.dataset.topic; fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
   const b = e.target.closest('[data-act]'); if (!b) return;
   const art = b.closest('.q'); const q = byId[art.dataset.id]; const act = b.dataset.act;
-  if (act === 'add') { toggleBasket(q.id); const on = basket.includes(q.id); b.setAttribute('aria-pressed', String(on)); b.textContent = on ? 'In test ✓' : 'Add to test'; return; }
+  if (act === 'add') { toggleBasket(q.id); refreshAddButtons(); return; }
+  if (act === 'addq') { toggleQuestion(q); refreshAddButtons(); return; }
   if (act === 'simshow') { st.f = blankFilters(); st.f.ids = [q.id, ...q.similar_to.map(x => x.id)]; st.f.idsLabel = `Q${q.label} from ${q.paper_ref} and ${q.similar_to.length} similar question${q.similar_to.length > 1 ? 's' : ''}`; syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
   const panel = art.querySelector('[data-panel]');
   const wasOpen = !panel.hidden && panel.dataset.act === act;
@@ -730,6 +815,59 @@ $('#heat-mode').addEventListener('click', e => {
   st.heatMode = b.dataset.mode; $$('#heat-mode .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderHeat();
 });
 
+// frequency: share of papers in which a topic is the main topic of at least one part
+st.freqScope = 'all'; st.freqSort = 'freq';
+const TIERS = [[75, 'Almost every paper'], [50, 'Most papers'], [25, 'Often'], [1, 'Occasionally'], [0, 'Not examined']];
+const tierOf = pct => TIERS.findIndex(([min]) => pct >= min);
+function renderFreq() {
+  const papers = PAPERS.filter(p => st.freqScope === 'all' || p.year >= 2023);
+  const n = papers.length;
+  const years = [...new Set(papers.map(p => p.year))];
+  const totalMarks = Q.filter(q => papers.some(p => p.ref === q.paper_ref)).reduce((s, q) => s + q.marks, 0);
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const rows = Object.keys(TOPICS).map(c => {
+    const mainP = papers.filter(p => STATS[c][p.ref].mainParts).length;
+    const anyP = papers.filter(p => STATS[c][p.ref].parts).length;
+    const marks = papers.reduce((s, p) => s + STATS[c][p.ref].marks, 0);
+    const byYear = years.map(y => { const ps = papers.filter(p => p.year === y); return { y, k: ps.filter(p => STATS[c][p.ref].mainParts).length, n: ps.length }; });
+    let last = null; for (let i = papers.length - 1; i >= 0; i--) if (STATS[c][papers[i].ref].mainParts) { last = papers[i]; break; }
+    return { c, mainP, anyP, marks, mainPct: pct(mainP, n), anyPct: pct(anyP, n), share: marks / totalMarks * 100, byYear, last };
+  });
+  if (st.freqSort === 'freq') rows.sort((a, b) => b.mainP - a.mainP || b.anyP - a.anyP || b.marks - a.marks);
+  if (st.freqSort === 'marks') rows.sort((a, b) => b.marks - a.marks || b.mainP - a.mainP);
+  $('#freq-note').textContent = `${n} papers${st.freqScope === 'new' ? ' set on the current syllabus (2023 onwards)' : ` (${PAPERS[0].series} ${PAPERS[0].year} to ${PAPERS[PAPERS.length - 1].series} ${PAPERS[PAPERS.length - 1].year})`}. "In % of papers" counts a paper when the topic is the main topic of at least one question part, including optional essays a candidate could skip. "Any mention" also counts parts where it is a secondary topic. Year columns show the same % for each year's papers. Click a row to see the questions.`;
+  // unit summary
+  const uRows = Object.keys(UNITS).map(u => {
+    const mk = rows.filter(r => UNIT_OF(r.c) === u).reduce((s, r) => s + r.marks, 0);
+    return [`${u} ${UNIT_SHORT[u] || UNITS[u]}`, Math.round(mk / totalMarks * 100), UNITS[u]];
+  });
+  bars($('#unit-bars'), uRows, '%');
+  let h = `<thead><tr><th>Topic</th><th>In % of papers</th><th style="text-align:right">Any mention</th><th style="text-align:right">Share of marks</th><th>How often</th>` +
+    years.map(y => `<th class="yc">${y}</th>`).join('') + `<th>Last main topic</th></tr></thead><tbody>`;
+  let curUnit = '';
+  for (const r of rows) {
+    const u = UNIT_OF(r.c);
+    if (st.freqSort === 'syl' && u !== curUnit) { curUnit = u; h += `<tr class="unit"><th colspan="${6 + years.length}">${u} · ${esc(UNITS[u])}</th></tr>`; }
+    const ti = tierOf(r.mainPct);
+    h += `<tr data-t="${r.c}" title="Show the questions on ${esc(TOPICS[r.c])}"><th class="t" scope="row"><b>${r.c}</b>${esc(TOPICS[r.c])}</th>` +
+      `<td><div class="fbar"><div class="track"><div class="fill" style="width:${r.mainPct}%"></div></div><span class="p">${r.mainPct}%</span></div><span class="note">${r.mainP} of ${n} papers</span></td>` +
+      `<td class="n">${r.anyPct}%</td><td class="n">${r.share.toFixed(1)}%</td><td><span class="tier t${4 - ti}">${TIERS[ti][1]}</span></td>` +
+      r.byYear.map(b => { const p = pct(b.k, b.n); return `<td class="yc"><span class="h${p ? Math.min(5, 1 + Math.floor(p / 20.001)) : 0}" title="${b.y}: main topic in ${b.k} of ${b.n} papers">${p}</span></td>`; }).join('') +
+      `<td class="${r.last ? '' : 'note'}" style="white-space:nowrap">${r.last ? r.last.ses + ' ' + r.last.yy + ' · ' + r.last.variant : 'Not yet'}</td></tr>`;
+  }
+  $('#freq').innerHTML = h + '</tbody>';
+}
+for (const [id, key] of [['#freq-scope', 'freqScope'], ['#freq-sort', 'freqSort']]) $(id).addEventListener('click', e => {
+  const b = e.target.closest('.chipbtn'); if (!b) return;
+  st[key] = b.dataset.v; $$(id + ' .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderFreq();
+});
+$('#freq').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-t]'); if (!tr) return;
+  st.f = blankFilters(); st.f.topic = tr.dataset.t; st.f.main = true;
+  if (st.freqScope === 'new') st.f.years = YEARS.filter(y => y >= 2023);
+  fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+});
+
 function bars(el, rows, unit) {
   const max = Math.max(...rows.map(r => r[1]), 1);
   el.innerHTML = rows.map(([label, v, title]) => `<div class="bar-row" title="${esc(title || '')}"><span>${esc(label)}</span><div class="track"><div class="fill" style="width:${(v / max * 100).toFixed(1)}%"></div></div><span class="val">${v}${unit || ''}</span></div>`).join('');
@@ -742,6 +880,7 @@ const THEMES = [
   ['Description instead of analysis', /(descri\w+|knowledge)[^.]{0,60}(rather than|without|instead of)[^.]{0,30}(analys|explain|appl)|display of knowledge|merely assert|simply (describ|list)/i],
 ];
 function renderPatterns() {
+  renderFreq();
   renderHeat();
   // facts
   const totals = Object.keys(TOPICS).map(c => [c, Q.filter(q => q.primary_topic === c).reduce((s, q) => s + q.marks, 0)]).sort((a, b) => b[1] - a[1]);
@@ -821,18 +960,33 @@ const partLabel = q => q.label.replace(/^\d/, '');
 function renderBuild() {
   const qs = basket.map(id => byId[id]);
   const marks = qs.reduce((s, q) => s + q.marks, 0);
-  $('#t-marks').textContent = marks; $('#t-parts').textContent = qs.length; $('#t-mins').textContent = marks * 2;
+  const groups = groupsOf(basket);
+  $('#t-marks').textContent = marks; $('#t-qs').textContent = groups.length; $('#t-parts').textContent = qs.length; $('#t-mins').textContent = marks * 2;
   $('#basket-empty').hidden = qs.length > 0; $('#b-clear').hidden = qs.length === 0;
-  $('#basket').innerHTML = qs.map((q, i) => `<div class="b-item" data-id="${q.id}"><div class="t"><span class="mono">${q.paper_ref} Q${esc(q.label)} · [${q.marks}]</span><br>${esc(q.question_text.length > 140 ? q.question_text.slice(0, 140) + '…' : q.question_text)}</div>
-    <div class="ctl"><button data-b="up" aria-label="Move up" ${i === 0 ? 'disabled' : ''}>↑</button><button data-b="down" aria-label="Move down" ${i === qs.length - 1 ? 'disabled' : ''}>↓</button><button data-b="rm" aria-label="Remove">×</button></div></div>`).join('');
+  const cut = (t, n) => t.length > n ? t.slice(0, n) + '…' : t;
+  $('#basket').innerHTML = groups.map((g, gi) => {
+    const f = g.items[0]; const all = SIBS[g.key]; const m = g.items.reduce((s, q) => s + q.marks, 0);
+    const head = f.section === 'A' ? `Data response · ${f.stimulus_title || ''}` : cut(byId[all[0]].question_text, 110);
+    const missing = all.filter(id => !basket.includes(id)).map(id => byId[id]);
+    return `<div class="b-group" data-key="${esc(g.key)}">
+      <div class="b-head"><div class="t"><span class="mono">${f.paper_ref} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}</div>
+        <div class="ctl"><button data-b="up" aria-label="Move question up" ${gi === 0 ? 'disabled' : ''}>↑</button><button data-b="down" aria-label="Move question down" ${gi === groups.length - 1 ? 'disabled' : ''}>↓</button><button data-b="rmq" aria-label="Remove the whole question" title="Remove the whole question">×</button></div></div>
+      ${all.length > 1 ? g.items.map(q => `<div class="b-part"><span><span class="mono">${esc(partLabel(q))} [${q.marks}]</span> ${esc(cut(q.question_text, 80))}</span><button data-b="rm" data-id="${q.id}" aria-label="Remove part ${esc(q.label)}" title="Remove this part">×</button></div>`).join('') : ''}
+      ${missing.length ? `<div class="b-missing"><span class="note">Not included:</span>${missing.map(q => `<button data-b="addpart" data-id="${q.id}" title="${esc(cut(q.question_text, 120))}">+ ${esc(partLabel(q))} [${q.marks}]</button>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
   renderPreview();
 }
 $('#basket').addEventListener('click', e => {
   const b = e.target.closest('[data-b]'); if (!b) return;
-  const id = b.closest('.b-item').dataset.id; const i = basket.indexOf(id);
-  if (b.dataset.b === 'rm') basket.splice(i, 1);
-  if (b.dataset.b === 'up' && i > 0) [basket[i - 1], basket[i]] = [basket[i], basket[i - 1]];
-  if (b.dataset.b === 'down' && i < basket.length - 1) [basket[i + 1], basket[i]] = [basket[i], basket[i + 1]];
+  const key = b.closest('.b-group').dataset.key; const act = b.dataset.b;
+  if (act === 'rm') basket = basket.filter(id => id !== b.dataset.id);
+  if (act === 'addpart') basket.push(b.dataset.id);
+  if (act === 'rmq') basket = basket.filter(id => qKey(byId[id]) !== key);
+  if (act === 'up' || act === 'down') {
+    const gs = groupsOf(basket); const i = gs.findIndex(g => g.key === key); const j = act === 'up' ? i - 1 : i + 1;
+    if (j >= 0 && j < gs.length) { [gs[i], gs[j]] = [gs[j], gs[i]]; basket = gs.flatMap(g => g.items.map(q => q.id)); }
+  }
   saveBasket(); renderBuild();
 });
 let clearArmed = false;
@@ -885,11 +1039,13 @@ $('#a-go').addEventListener('click', () => {
   const taken = new Set(basket);
   const near = new Set(basket.flatMap(id => byId[id].similar_to.map(s => s.id)));
   const units = [];
-  if (format !== 'data') {
+  if (format === 'essay' || format === 'mixed') {
     const essayKeys = new Set(Q.filter(q => q.section !== 'A' && topicOk(q)).map(q => q.paper_ref + '|' + q.question));
     for (const k of essayKeys) { const parts = Q.filter(q => q.paper_ref + '|' + q.question === k); units.push(parts); }
   }
-  if (format !== 'essay') for (const q of Q) if (q.section === 'A' && topicOk(q)) units.push([q]);
+  if (format === 'datawhole') {
+    for (const k of new Set(Q.filter(q => q.section === 'A' && topicOk(q)).map(qKey))) units.push(SIBS[k].map(id => byId[id]));
+  } else if (format !== 'essay') for (const q of Q) if (q.section === 'A' && topicOk(q)) units.push([q]);
   let total = basket.reduce((s, id) => s + byId[id].marks, 0); const start = total; const added = [];
   for (const u of shuffle(units)) {
     const m = u.reduce((s, q) => s + q.marks, 0);

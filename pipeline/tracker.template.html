@@ -1,0 +1,1358 @@
+<title>Econ Past Paper Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700;900&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: SISB navy masthead with tabs; one working pane per tab (filters + results, heatmap, test builder, practice). */
+:root {
+  --bg: #F3F6FA;
+  --surface: #FFFFFF;
+  --surface-2: #EAF0F6;
+  --ink: #0E1A2B;
+  --ink-2: #3F4F66;
+  --muted: #66768C;
+  --line: #D5DDE7;
+  --mast: #002F6C;          /* SISB navy */
+  --mast-ink: #FFFFFF;
+  --mast-2: #9FC3E6;
+  --link: #00679A;          /* SISB blue, darkened for text contrast */
+  --blue: #008BCC;          /* SISB blue */
+  --orange: #FF8F1C;        /* SISB orange: used only for the test count */
+  --primary: #002F6C;
+  --orange-ink: #8A4300;
+  --warn-bg: #FFF3E3;
+  --warn-ink: #7A3E00;
+  --good: #1D7A45;
+  --chip: #E6EEF7;
+  --chip-ink: #1C3352;
+  --h0: #F1F5F9; --h1: #D3E6F4; --h2: #A3CCEA; --h3: #63A9DA; --h4: #2683C2; --h5: #0B5A92;
+  --h1i: #0E1A2B; --h2i: #0E1A2B; --h3i: #0E1A2B; --h4i: #FFFFFF; --h5i: #FFFFFF;
+  --font-ui: "Lato", "Segoe UI", system-ui, sans-serif;
+  --font-read: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --r: 8px;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0C131D; --surface: #131C29; --surface-2: #1A2535; --ink: #E5ECF4; --ink-2: #B4C1D1; --muted: #8494A8;
+  --line: #273447; --mast: #0A2552; --mast-ink: #FFFFFF; --mast-2: #8DB8E2; --link: #5CB8EA; --blue: #2EA6E0;
+  --orange: #FF9F3D; --orange-ink: #FFB873; --primary: #1C6BAA; --warn-bg: #33240F; --warn-ink: #F7C27C; --good: #5CC98A;
+  --chip: #1E2C40; --chip-ink: #C9D8EA;
+  --h0: #172231; --h1: #173B58; --h2: #1B5880; --h3: #2C7DB2; --h4: #56A6D8; --h5: #9CCFF0;
+  --h1i: #E5ECF4; --h2i: #E5ECF4; --h3i: #FFFFFF; --h4i: #0C131D; --h5i: #0C131D;
+  color-scheme: dark; } }
+:root[data-theme="dark"] {
+  --bg: #0C131D; --surface: #131C29; --surface-2: #1A2535; --ink: #E5ECF4; --ink-2: #B4C1D1; --muted: #8494A8;
+  --line: #273447; --mast: #0A2552; --mast-ink: #FFFFFF; --mast-2: #8DB8E2; --link: #5CB8EA; --blue: #2EA6E0;
+  --orange: #FF9F3D; --orange-ink: #FFB873; --primary: #1C6BAA; --warn-bg: #33240F; --warn-ink: #F7C27C; --good: #5CC98A;
+  --chip: #1E2C40; --chip-ink: #C9D8EA;
+  --h0: #172231; --h1: #173B58; --h2: #1B5880; --h3: #2C7DB2; --h4: #56A6D8; --h5: #9CCFF0;
+  --h1i: #E5ECF4; --h2i: #E5ECF4; --h3i: #FFFFFF; --h4i: #0C131D; --h5i: #0C131D;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.5; }
+button, input, select, textarea { font: inherit; color: inherit; }
+a { color: var(--link); }
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+h1, h2, h3 { text-wrap: balance; margin: 0; }
+
+/* masthead */
+.mast { background: var(--mast); color: var(--mast-ink); padding-inline: 16px; }
+.mast-in { max-width: 1240px; margin: 0 auto; padding-block: 18px 0; display: grid; gap: 14px; }
+.brand { display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 16px; }
+.brand h1 { font-size: 1.55rem; font-weight: 900; letter-spacing: .01em; }
+.brand .sub { color: var(--mast-2); font-size: .92rem; }
+.brand .code { font-family: var(--font-mono); font-size: .82rem; color: var(--mast-2); }
+.tabs { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+.tab { background: none; border: 0; color: var(--mast-2); padding: 10px 16px 12px; font-weight: 700; cursor: pointer;
+  border-bottom: 3px solid transparent; white-space: nowrap; }
+.tab:hover { color: var(--mast-ink); }
+.tab[aria-selected="true"] { color: var(--mast-ink); border-bottom-color: var(--blue); }
+.badge { display: inline-block; min-width: 1.5em; padding: 0 .45em; margin-left: 6px; border-radius: 99px; background: var(--orange);
+  color: #2B1600; font-size: .78rem; font-weight: 900; text-align: center; font-variant-numeric: tabular-nums; }
+
+main { padding-inline: 16px; }
+.pane { max-width: 1240px; margin: 0 auto; padding-block: 22px 48px; }
+.pane[hidden] { display: none; }
+.lede { color: var(--ink-2); max-width: 70ch; margin: 0 0 18px; }
+
+/* shared controls */
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 6px; padding: 6px 12px; cursor: pointer; font-weight: 700;
+  font-size: .88rem; color: var(--ink-2); }
+.btn:hover { border-color: var(--blue); color: var(--ink); }
+.btn.primary { background: var(--primary); border-color: var(--primary); color: #fff; }
+.btn.primary:hover { filter: brightness(1.15); color: #fff; }
+.btn[aria-pressed="true"] { background: var(--chip); color: var(--chip-ink); border-color: var(--blue); }
+.btn:disabled { opacity: .5; cursor: not-allowed; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chipbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 99px; padding: 3px 11px; font-size: .84rem; cursor: pointer; color: var(--ink-2); }
+.chipbtn[aria-pressed="true"] { background: var(--primary); border-color: var(--primary); color: #fff; }
+label.field { display: grid; gap: 4px; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.fieldset-title { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); margin: 0 0 6px; }
+input[type="search"], input[type="text"], input[type="number"], input[type="date"], select, textarea {
+  width: 100%; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); padding: 7px 10px;
+  text-transform: none; letter-spacing: 0; font-weight: 400; font-size: .92rem; color: var(--ink); }
+textarea { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; min-height: 220px; resize: vertical; }
+.check { display: flex; gap: 8px; align-items: flex-start; font-size: .9rem; color: var(--ink-2); cursor: pointer; }
+.check input { margin-top: 4px; }
+.note { font-size: .84rem; color: var(--muted); }
+.mono { font-family: var(--font-mono); font-size: .82rem; }
+
+/* browse */
+.browse { display: grid; grid-template-columns: 270px minmax(0, 1fr); gap: 24px; align-items: start; }
+.filters { display: grid; gap: 18px; position: sticky; top: env(safe-area-inset-top, 0px); padding-top: 4px; max-height: 100vh; overflow-y: auto; padding-bottom: 24px; }
+.filters-toggle { display: none; }
+.results-head { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.results-head .count { font-weight: 900; font-size: 1.05rem; }
+.results-head .count span { color: var(--muted); font-weight: 400; }
+.banner { background: var(--chip); color: var(--chip-ink); border-radius: var(--r); padding: 8px 12px; display: flex; gap: 10px; align-items: center;
+  justify-content: space-between; margin-bottom: 12px; font-size: .9rem; flex-wrap: wrap; }
+.list { display: grid; gap: 12px; }
+.q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
+.q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
+.q-ref { font-family: var(--font-mono); font-size: .82rem; color: var(--ink-2); }
+.q-lbl { font-weight: 900; }
+.q-sec { color: var(--muted); font-size: .84rem; }
+.q-mk { margin-left: auto; font-family: var(--font-read); font-weight: 600; font-variant-numeric: tabular-nums; }
+.q-text { font-family: var(--font-read); font-size: 1.04rem; line-height: 1.55; margin: 0; max-width: 78ch; }
+.q-ctx { font-size: .85rem; color: var(--ink-2); }
+.tags { display: flex; flex-wrap: wrap; gap: 6px; }
+.tag { background: var(--chip); color: var(--chip-ink); border-radius: 4px; padding: 1px 8px; font-size: .8rem; cursor: pointer; border: 0; }
+.tag.main { font-weight: 700; }
+.tag.plain { background: none; border: 1px solid var(--line); color: var(--ink-2); cursor: default; }
+.flag { background: var(--warn-bg); color: var(--warn-ink); border-radius: 4px; padding: 3px 9px; font-size: .82rem; }
+.acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.acts .spacer { flex: 1; }
+.add[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: #2B1600; }
+.panel { border-top: 1px dashed var(--line); padding-top: 10px; font-size: .92rem; min-width: 0; }
+.panel h4 { margin: 0 0 6px; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.panel p { margin: 0 0 8px; max-width: 80ch; }
+.panel ul { margin: 0 0 8px; padding-left: 20px; max-width: 80ch; }
+.panel .src { font-family: var(--font-read); white-space: pre-wrap; background: var(--surface-2); padding: 12px; border-radius: 6px; max-height: 420px; overflow: auto; }
+.sim-item { display: grid; gap: 2px; padding: 6px 0; border-bottom: 1px solid var(--line); }
+.more { justify-self: center; margin-top: 8px; }
+.empty { padding: 32px; text-align: center; color: var(--muted); background: var(--surface); border: 1px dashed var(--line); border-radius: var(--r); }
+
+/* patterns */
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 12px; margin-bottom: 22px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; }
+.fact .k { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+.fact .v { font-weight: 900; font-size: 1.05rem; margin-top: 2px; }
+.fact .d { font-size: .86rem; color: var(--ink-2); }
+.section-h { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: baseline; gap: 8px; margin: 26px 0 10px; }
+.section-h h2 { font-size: 1.15rem; font-weight: 900; }
+.heat-wrap { overflow-x: auto; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); }
+table.heat { border-collapse: separate; border-spacing: 2px; font-size: .78rem; font-variant-numeric: tabular-nums; }
+table.heat th, table.heat td { padding: 0; }
+table.heat thead th { font-weight: 700; color: var(--muted); text-align: center; vertical-align: bottom; padding: 4px 0; white-space: nowrap; font-size: .72rem; }
+table.heat thead .yr th { color: var(--ink-2); border-bottom: 1px solid var(--line); }
+table.heat th.t { position: sticky; left: 0; background: var(--surface); text-align: left; padding: 3px 10px 3px 8px; font-weight: 400; color: var(--ink); white-space: nowrap; z-index: 1; }
+table.heat th.t b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-2); margin-right: 6px; }
+table.heat tr.unit th { text-align: left; padding: 10px 8px 2px; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); position: sticky; left: 0; background: var(--surface); }
+td.h { width: 32px; min-width: 32px; height: 26px; text-align: center; border-radius: 3px; cursor: pointer; }
+td.h:hover { outline: 2px solid var(--ink); outline-offset: -1px; }
+td.h0 { background: var(--h0); color: transparent; }
+td.h1 { background: var(--h1); color: var(--h1i); } td.h2 { background: var(--h2); color: var(--h2i); } td.h3 { background: var(--h3); color: var(--h3i); }
+td.h4 { background: var(--h4); color: var(--h4i); } td.h5 { background: var(--h5); color: var(--h5i); }
+td.sum { padding: 0 10px; text-align: right; font-weight: 700; white-space: nowrap; }
+td.last { padding: 0 10px; color: var(--ink-2); white-space: nowrap; }
+td.last.never { color: var(--warn-ink); font-weight: 700; }
+.legend { display: flex; align-items: center; gap: 6px; font-size: .8rem; color: var(--muted); flex-wrap: wrap; }
+.legend i { width: 22px; height: 12px; border-radius: 2px; display: inline-block; }
+.tip { position: fixed; z-index: 10; pointer-events: none; background: var(--ink); color: var(--bg); padding: 7px 10px; border-radius: 6px; font-size: .8rem;
+  max-width: 300px; line-height: 1.4; box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+table.freq { border-collapse: collapse; width: 100%; font-size: .86rem; font-variant-numeric: tabular-nums; }
+table.freq th, table.freq td { padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: middle; }
+table.freq thead th { font-size: .72rem; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); font-weight: 700; text-align: left; white-space: nowrap; vertical-align: bottom; }
+table.freq thead th.yc { text-align: center; padding: 6px 1px; }
+table.freq th.t { text-align: left; font-weight: 400; min-width: 200px; }
+table.freq th.t b { font-family: var(--font-mono); font-weight: 500; color: var(--ink-2); margin-right: 6px; }
+table.freq tr.unit th { padding: 12px 8px 4px; font-size: .74rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+table.freq tbody tr[data-t] { cursor: pointer; }
+table.freq tbody tr[data-t]:hover { background: var(--surface-2); }
+.fbar { display: grid; grid-template-columns: minmax(80px, 140px) 3.2em; gap: 8px; align-items: center; }
+.fbar .track { height: 12px; background: var(--surface-2); border-radius: 3px; }
+.fbar .fill { height: 100%; background: var(--blue); border-radius: 0 3px 3px 0; }
+.fbar .p { text-align: right; font-weight: 700; }
+table.freq td.n { text-align: right; white-space: nowrap; }
+table.freq td.yc { padding: 3px 1px; }
+table.freq td.yc span { display: block; width: 34px; height: 24px; line-height: 24px; text-align: center; border-radius: 3px; font-size: .74rem; margin: 0 auto; }
+.yc .h0 { background: var(--h0); color: var(--muted); } .yc .h1 { background: var(--h1); color: var(--h1i); } .yc .h2 { background: var(--h2); color: var(--h2i); }
+.yc .h3 { background: var(--h3); color: var(--h3i); } .yc .h4 { background: var(--h4); color: var(--h4i); } .yc .h5 { background: var(--h5); color: var(--h5i); }
+.tier { font-size: .76rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; white-space: nowrap; background: var(--surface-2); color: var(--ink-2); }
+.tier.t4 { background: var(--blue); color: #fff; } .tier.t3 { background: var(--h3); color: var(--h3i); } .tier.t0 { color: var(--warn-ink); }
+.two { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 22px; }
+.bars { display: grid; gap: 6px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; }
+.bar-row { display: grid; grid-template-columns: 110px minmax(0, 1fr) 54px; gap: 10px; align-items: center; font-size: .86rem; }
+.bar-row .track { height: 14px; background: var(--surface-2); border-radius: 3px; }
+.bar-row .fill { height: 100%; background: var(--blue); border-radius: 0 4px 4px 0; }
+.bar-row .val { text-align: right; font-variant-numeric: tabular-nums; color: var(--ink-2); }
+.cluster { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px 14px; display: grid; gap: 8px; }
+.cluster h3 { font-size: .95rem; }
+.cluster .row { display: grid; grid-template-columns: 150px minmax(0, 1fr) 40px; gap: 10px; font-size: .9rem; align-items: baseline; }
+.cluster .row .t { font-family: var(--font-read); }
+.clusters { display: grid; gap: 10px; }
+details.er { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 10px 14px; }
+details.er + details.er { margin-top: 8px; }
+details.er summary { cursor: pointer; font-weight: 700; }
+details.er p, details.er ul { max-width: 85ch; }
+
+/* builder */
+.builder { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; }
+.card h2 { font-size: 1.05rem; font-weight: 900; }
+.basket { display: grid; gap: 6px; }
+.b-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
+.b-item .t { font-size: .88rem; }
+.b-group { display: grid; gap: 4px; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.b-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
+.b-head .t { font-size: .88rem; } .b-head .t .mono { color: var(--ink-2); }
+.b-head .ctl, .b-part { display: flex; gap: 4px; }
+.b-head .ctl button, .b-part button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); flex: none; }
+.b-head .ctl button:disabled { opacity: .4; cursor: default; }
+.b-part { justify-content: space-between; align-items: center; gap: 8px; padding-left: 14px; font-size: .82rem; color: var(--ink-2); }
+.b-part button { width: 24px; height: 24px; }
+.b-missing { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding-left: 14px; font-size: .8rem; }
+.b-missing button { border: 1px dashed var(--muted); background: none; border-radius: 4px; padding: 2px 8px; cursor: pointer; color: var(--ink-2); font: inherit; }
+.b-missing button:hover, .b-part button:hover, .b-head .ctl button:hover:not(:disabled) { border-color: var(--blue); color: var(--blue); }
+.b-item .t .mono { color: var(--ink-2); }
+.b-item .ctl { display: flex; gap: 4px; }
+.b-item .ctl button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); }
+.totals { display: flex; gap: 18px; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
+.totals b { font-size: 1.3rem; font-weight: 900; display: block; }
+.totals span { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.paper { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 28px clamp(16px, 4vw, 48px); font-family: var(--font-read); min-width: 0; }
+.paper h2 { font-family: var(--font-ui); font-size: 1.25rem; font-weight: 900; }
+.paper .meta { font-family: var(--font-ui); font-size: .88rem; color: var(--ink-2); margin: 4px 0 18px; }
+.pq { margin: 0 0 18px; }
+.pq .num { font-weight: 600; }
+.pq-line { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; gap: 6px; align-items: baseline; }
+.pq-line .mk { font-variant-numeric: tabular-nums; }
+.pq .srcline { font-family: var(--font-ui); font-size: .76rem; color: var(--muted); margin: 2px 0 0 2.6em; }
+.pq .ms { font-family: var(--font-ui); font-size: .9rem; margin: 6px 0 0 2.6em; border-left: 3px solid var(--line); padding-left: 12px; }
+.pq .ms p { margin: 0 0 6px; } .pq .ms ul { margin: 0 0 6px; padding-left: 18px; }
+.extract { margin: 0 0 14px 2.6em; background: var(--surface-2); padding: 12px 14px; border-radius: 6px; font-size: .92rem; white-space: pre-wrap; max-height: 360px; overflow: auto; }
+.viewtabs { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; align-items: center; }
+.status { font-size: .86rem; min-height: 1.3em; }
+.status.ok { color: var(--good); } .status.err { color: var(--warn-ink); }
+
+/* practice */
+.practice { display: grid; grid-template-columns: 260px minmax(0, 1fr); gap: 24px; align-items: start; }
+.result { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 10px; }
+.score { font-size: 1.8rem; font-weight: 900; font-variant-numeric: tabular-nums; }
+.score small { font-size: 1rem; color: var(--muted); font-weight: 700; }
+.result ul { margin: 0; padding-left: 20px; }
+.result h4 { margin: 0; font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.hist { width: 100%; border-collapse: collapse; font-size: .86rem; }
+.hist td, .hist th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); }
+.hist td.n { text-align: right; font-variant-numeric: tabular-nums; }
+
+footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color: var(--muted); font-size: .8rem; border-top: 1px solid var(--line); }
+
+@media (max-width: 900px) {
+  .browse, .builder, .practice, .two { grid-template-columns: minmax(0, 1fr); }
+  .filters { position: static; max-height: none; overflow: visible; }
+  .filters-toggle { display: inline-block; }
+  .filters.collapsed > :not(.filters-toggle-wrap) { display: none; }
+  .bar-row { grid-template-columns: 90px minmax(0, 1fr) 44px; }
+  .cluster .row { grid-template-columns: minmax(0, 1fr) 36px; }
+  .cluster .row .r { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: no-preference) { .tab, .btn, .chipbtn { transition: color .12s, background-color .12s, border-color .12s; } }
+</style>
+
+<header class="mast">
+  <div class="mast-in">
+    <div class="brand">
+      <h1>Econ Past Paper Tracker</h1>
+      <span class="sub">Cambridge International AS Level Economics · Paper 2 Data Response and Essays</span>
+      <span class="code" id="mast-stats"></span>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Sections">
+      <button class="tab" role="tab" id="tab-browse" data-tab="browse">Browse questions</button>
+      <button class="tab" role="tab" id="tab-patterns" data-tab="patterns">Patterns</button>
+      <button class="tab" role="tab" id="tab-build" data-tab="build">Test builder<span class="badge" id="basket-count">0</span></button>
+      <button class="tab" role="tab" id="tab-practice" data-tab="practice">Practice</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- BROWSE -->
+  <section class="pane" id="pane-browse" role="tabpanel" aria-labelledby="tab-browse">
+    <div class="browse">
+      <aside class="filters" id="filters">
+        <div class="filters-toggle-wrap"><button class="btn filters-toggle" id="filters-toggle" aria-expanded="true">Hide filters</button></div>
+        <label class="field">Search
+          <input type="search" id="f-q" placeholder="e.g. buffer stock, Gini, tariff">
+        </label>
+        <div><p class="fieldset-title">Syllabus unit</p><div class="chips" id="f-units"></div></div>
+        <label class="field">Topic
+          <select id="f-topic"></select>
+        </label>
+        <label class="check"><input type="checkbox" id="f-main"> Main topic only</label>
+        <div><p class="fieldset-title">Year</p><div class="chips" id="f-years"></div></div>
+        <div><p class="fieldset-title">Series</p><div class="chips" id="f-series"></div></div>
+        <label class="field">Paper
+          <select id="f-paper"></select>
+        </label>
+        <div><p class="fieldset-title">Section</p><div class="chips" id="f-sections"></div></div>
+        <div><p class="fieldset-title">Marks</p><div class="chips" id="f-marks"></div></div>
+        <label class="field">Command word
+          <select id="f-cmd"></select>
+        </label>
+        <div style="display:grid;gap:6px">
+          <label class="check"><input type="checkbox" id="f-diagram"> Diagram required</label>
+          <label class="check"><input type="checkbox" id="f-er"> Has an examiner report comment</label>
+          <label class="check"><input type="checkbox" id="f-usable"> Hide parts that need source data removed from the public paper</label>
+          <label class="check"><input type="checkbox" id="f-intest"> Only questions in my test</label>
+        </div>
+        <button class="btn" id="f-clear">Clear all filters</button>
+      </aside>
+      <div style="min-width:0">
+        <div class="banner" id="ids-banner" hidden><span id="ids-banner-text"></span><button class="btn" id="ids-clear">Show all questions</button></div>
+        <div class="results-head">
+          <div class="count" id="r-count"></div>
+          <label class="field" style="grid-auto-flow:column;align-items:center;gap:8px">Sort
+            <select id="r-sort">
+              <option value="new">Newest paper first</option>
+              <option value="old">Oldest paper first</option>
+              <option value="marks">Highest marks first</option>
+              <option value="topic">By main topic</option>
+            </select>
+          </label>
+        </div>
+        <div class="list" id="r-list"></div>
+        <button class="btn more" id="r-more" hidden>Show more</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- PATTERNS -->
+  <section class="pane" id="pane-patterns" role="tabpanel" aria-labelledby="tab-patterns" hidden>
+    <p class="lede">Every question part is tagged to the 9708 AS syllabus (2022 questions, set on the 2020–22 syllabus, are mapped to the same topic codes). Counts include all optional essays that were set, not only the ones a candidate would answer: four per paper from 2023, three per paper in 2022. Click any cell to see those questions.</p>
+    <div class="facts" id="facts"></div>
+
+    <div class="section-h">
+      <h2>How often each topic comes up</h2>
+      <div style="display:flex;gap:14px;flex-wrap:wrap">
+        <div class="chips" id="freq-scope">
+          <button class="chipbtn" data-v="all" aria-pressed="true">All papers</button>
+          <button class="chipbtn" data-v="new" aria-pressed="false">Current syllabus (2023 on)</button>
+        </div>
+        <div class="chips" id="freq-sort">
+          <button class="chipbtn" data-v="freq" aria-pressed="true">Most frequent first</button>
+          <button class="chipbtn" data-v="marks" aria-pressed="false">Most marks first</button>
+          <button class="chipbtn" data-v="syl" aria-pressed="false">Syllabus order</button>
+        </div>
+      </div>
+    </div>
+    <p class="note" id="freq-note" style="margin:0 0 10px;max-width:90ch"></p>
+    <div class="bars" style="margin-bottom:12px"><div class="note">Share of all marks by syllabus unit (as the main topic)</div><div id="unit-bars" style="display:grid;gap:6px"></div></div>
+    <div class="heat-wrap"><table class="freq" id="freq"></table></div>
+
+    <div class="section-h">
+      <h2>Topic coverage by paper</h2>
+      <div class="chips" id="heat-mode">
+        <button class="chipbtn" data-mode="marks" aria-pressed="true">Marks as main topic</button>
+        <button class="chipbtn" data-mode="parts" aria-pressed="false">Parts tagged (any)</button>
+      </div>
+    </div>
+    <div class="heat-wrap"><table class="heat" id="heat"></table></div>
+    <div class="legend" id="heat-legend" style="margin-top:8px"></div>
+
+    <div class="two">
+      <div>
+        <div class="section-h"><h2>Command words</h2><span class="note">Question parts using each command word</span></div>
+        <div class="bars" id="cmd-bars"></div>
+      </div>
+      <div>
+        <div class="section-h"><h2>What examiners keep criticising</h2><span class="note" id="er-note"></span></div>
+        <div class="bars" id="er-bars"></div>
+      </div>
+    </div>
+
+    <div class="section-h"><h2>Recurring questions</h2><span class="note">Same main topic and sub-topic, similar wording, in different papers</span></div>
+    <div class="clusters" id="clusters"></div>
+    <button class="btn more" id="clusters-more" hidden>Show all recurring questions</button>
+
+    <div class="section-h"><h2>Examiner report key messages</h2><span class="note">From the Principal Examiner Reports for Teachers</span></div>
+    <div id="er-papers"></div>
+  </section>
+
+  <!-- BUILD -->
+  <section class="pane" id="pane-build" role="tabpanel" aria-labelledby="tab-build" hidden>
+    <div class="builder">
+      <div style="display:grid;gap:16px;min-width:0">
+        <div class="card">
+          <h2>Your test</h2>
+          <div class="totals">
+            <div><b id="t-marks">0</b><span>marks</span></div>
+            <div><b id="t-qs">0</b><span>questions</span></div>
+            <div><b id="t-parts">0</b><span>parts</span></div>
+            <div title="About 2 minutes per mark, as in the exam"><b id="t-mins">0</b><span>minutes</span></div>
+          </div>
+          <div class="basket" id="basket"></div>
+          <p class="note" id="basket-empty">Add questions from Browse questions, or fill the test automatically below.</p>
+          <button class="btn" id="b-clear">Remove all</button>
+        </div>
+        <div class="card">
+          <h2>Fill automatically</h2>
+          <label class="field">Topics
+            <select id="a-unit"></select>
+          </label>
+          <div class="grid2">
+            <label class="field">Target marks
+              <input type="number" id="a-target" min="4" max="120" step="1" value="40">
+            </label>
+            <label class="field">Question types
+              <select id="a-format">
+                <option value="essay">Essays (8 + 12 pairs)</option>
+                <option value="datawhole">Whole data response questions</option>
+                <option value="data">Single data response parts</option>
+                <option value="mixed">Mixed</option>
+              </select>
+            </label>
+          </div>
+          <label class="check"><input type="checkbox" id="a-usable" checked> Skip parts that need source data removed from the public paper</label>
+          <label class="check"><input type="checkbox" id="a-repeats" checked> Avoid near-duplicate questions</label>
+          <button class="btn primary" id="a-go">Add questions</button>
+          <p class="status" id="a-status" aria-live="polite"></p>
+        </div>
+        <div class="card">
+          <h2>Paper details</h2>
+          <label class="field">Title <input type="text" id="d-title" value="AS Economics topic test"></label>
+          <div class="grid2">
+            <label class="field">Class <input type="text" id="d-class" value="G11 Economics"></label>
+            <label class="field">Date <input type="date" id="d-date"></label>
+          </div>
+          <label class="field">Instructions
+            <textarea id="d-instr" style="min-height:90px;font-family:var(--font-ui);font-size:.9rem">Answer all questions. Write in full sentences and use clearly labelled diagrams where they help your answer. The number of marks for each question or part question is shown in brackets [ ].</textarea>
+          </label>
+          <label class="check"><input type="checkbox" id="d-extracts" checked> Include the source extract for data response questions</label>
+          <label class="check"><input type="checkbox" id="d-lines"> Add writing lines (about 1.5 lines per mark)</label>
+        </div>
+      </div>
+      <div style="min-width:0">
+        <div class="viewtabs">
+          <div class="chips" id="view-tabs">
+            <button class="chipbtn" data-view="paper" aria-pressed="true">Question paper</button>
+            <button class="chipbtn" data-view="ms" aria-pressed="false">Mark scheme</button>
+          </div>
+          <span style="flex:1"></span>
+          <button class="btn primary" id="dl-paper">Download paper (.docx)</button>
+          <button class="btn primary" id="dl-ms">Download mark scheme (.docx)</button>
+          <button class="btn" id="copy-text">Copy as text</button>
+        </div>
+        <p class="status" id="dl-status" aria-live="polite"></p>
+        <div class="paper" id="preview"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRACTICE -->
+  <section class="pane" id="pane-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
+    <div class="practice">
+      <aside class="card">
+        <h2>Pick a question</h2>
+        <label class="field">Topic <select id="p-topic"></select></label>
+        <label class="field">Question type
+          <select id="p-type">
+            <option value="any">Any</option>
+            <option value="short">Data response (1–6 marks)</option>
+            <option value="8">8-mark essay part</option>
+            <option value="12">12-mark essay part</option>
+          </select>
+        </label>
+        <button class="btn primary" id="p-new">New question</button>
+        <div>
+          <p class="fieldset-title">Your recent attempts</p>
+          <div id="p-hist"></div>
+        </div>
+      </aside>
+      <div style="display:grid;gap:14px;min-width:0" id="p-main"></div>
+    </div>
+  </section>
+</main>
+
+<footer class="foot">
+  Question papers, mark schemes and examiner reports © Cambridge University Press &amp; Assessment, compiled for internal teaching use at SISB Nonthaburi.
+  Topic tags follow the 9708 syllabus for 2026–2028; 2022 papers (2020–22 syllabus, point-based mark schemes) use the same codes. Several published papers have source material removed for copyright; those parts are flagged.
+</footer>
+<div class="tip" id="tip" hidden></div>
+
+<script type="application/json" id="data">/*__DATA__*/</script>
+<script>
+(function () {
+'use strict';
+const D = JSON.parse(document.getElementById('data').textContent);
+const Q = D.questions;
+const byId = Object.fromEntries(Q.map(q => [q.id, q]));
+const TOPICS = D.topics, UNITS = D.units;
+const $ = (s, el = document) => el.querySelector(s);
+const $$ = (s, el = document) => Array.from(el.querySelectorAll(s));
+const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem('pp9708:' + k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem('pp9708:' + k, JSON.stringify(v)); } catch (e) { /* storage unavailable */ } },
+};
+function fmt(text) {
+  const lines = String(text || '').split('\n').filter(l => l.trim());
+  let html = '', inList = false;
+  for (const l of lines) {
+    if (/^[•\-]\s/.test(l) || l.startsWith('•')) {
+      if (!inList) { html += '<ul>'; inList = true; }
+      html += '<li>' + esc(l.replace(/^[•\-]\s*/, '')) + '</li>';
+    } else {
+      if (inList) { html += '</ul>'; inList = false; }
+      html += '<p>' + esc(l) + '</p>';
+    }
+  }
+  return html + (inList ? '</ul>' : '');
+}
+
+// ---------- papers, sessions ----------
+const PAPERS = [];
+for (const q of Q) if (!PAPERS.some(p => p.ref === q.paper_ref)) {
+  const [, v, s1, s2, yy] = q.paper_ref.split('/');
+  PAPERS.push({ ref: q.paper_ref, year: q.year, series: q.series, variant: v, ses: s1 + '/' + s2, yy, short: `${s1}/${s2} ${yy} · ${v}` });
+}
+const SERIES = [...new Set(Q.map(q => q.series))];
+const YEARS = [...new Set(Q.map(q => q.year))].sort();
+const isUnusable = q => (q.flags || []).some(f => f.startsWith('Needs data'));
+const stimKey = q => q.id.replace(/_Q1.*$/, '_Q1');
+const topicName = c => TOPICS[c] || c;
+const sectionName = { A: 'Data response', B: 'Microeconomics essay', C: 'Macroeconomics essay' };
+const isLevels = q => (q.marking || '').startsWith('levels');  // 2023+ 12-mark parts; 2022 schemes are point-based
+const isOld = q => q.year <= 2022;  // 2020–22 syllabus papers
+$('#mast-stats').textContent = `${PAPERS.length} papers · ${Q.length} question parts · ${PAPERS[0].short.split(' · ')[0]} to ${PAPERS[PAPERS.length - 1].short.split(' · ')[0]}`;
+
+// ---------- state ----------
+const blankFilters = () => ({ q: '', units: [], topic: '', main: false, years: [], series: [], paper: '', sections: [], marks: [], cmd: '', diagram: false, er: false, usable: false, intest: false, ids: null, idsLabel: '' });
+const st = { tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
+const qKey = q => q.paper_ref + '|' + q.question;
+const SIBS = {}; for (const q of Q) (SIBS[qKey(q)] = SIBS[qKey(q)] || []).push(q.id);
+// keep every part of a question together, in paper order; questions stay in the order they were first added
+function normaliseBasket() {
+  const order = [], seen = {};
+  for (const id of basket) { const k = qKey(byId[id]); if (!seen[k]) { seen[k] = new Set(); order.push(k); } seen[k].add(id); }
+  basket = order.flatMap(k => SIBS[k].filter(id => seen[k].has(id)));
+}
+let basket = store.get('basket', []).filter(id => byId[id]);
+normaliseBasket();
+const saveBasket = () => { normaliseBasket(); store.set('basket', basket); $('#basket-count').textContent = basket.length; };
+
+// ---------- tabs ----------
+function showTab(name) {
+  if (!['browse', 'patterns', 'build', 'practice'].includes(name)) name = 'browse';
+  st.tab = name;
+  for (const b of $$('.tab')) b.setAttribute('aria-selected', String(b.dataset.tab === name));
+  for (const p of $$('.pane')) p.hidden = p.id !== 'pane-' + name;
+  if (name === 'build') renderBuild();
+  if (name === 'patterns' && !st.patternsDone) { renderPatterns(); st.patternsDone = true; }
+  if (name === 'practice' && !st.practiceDone) { renderPractice(); st.practiceDone = true; }
+  try { history.replaceState(null, '', '#' + name); } catch (e) { /* ignore */ }
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => showTab(b.dataset.tab)));
+
+// ---------- filter controls ----------
+function chipGroup(el, items, key) {
+  el.innerHTML = items.map(([v, label]) => `<button class="chipbtn" data-v="${esc(v)}" aria-pressed="false">${esc(label)}</button>`).join('');
+  el.addEventListener('click', e => {
+    const b = e.target.closest('.chipbtn'); if (!b) return;
+    const v = typeof st.f[key][0] === 'number' || key === 'marks' || key === 'years' ? Number(b.dataset.v) : b.dataset.v;
+    const arr = st.f[key]; const i = arr.indexOf(v);
+    if (i >= 0) arr.splice(i, 1); else arr.push(v);
+    if (key === 'units') fillTopicSelect();
+    syncControls(); renderResults(true);
+  });
+}
+const UNIT_SHORT = { 1: 'Basic ideas', 2: 'Price system', 3: 'Micro intervention', 4: 'Macroeconomy', 5: 'Macro intervention', 6: 'International' };
+chipGroup($('#f-units'), Object.keys(UNITS).map(u => [u, `${u} ${UNIT_SHORT[u] || UNITS[u]}`]), 'units');
+chipGroup($('#f-years'), YEARS.map(y => [y, String(y)]), 'years');
+chipGroup($('#f-series'), SERIES.map(s => [s, s]), 'series');
+chipGroup($('#f-sections'), [['data', 'Data response'], ['micro', 'Micro essay'], ['macro', 'Macro essay']], 'sections');
+chipGroup($('#f-marks'), [...new Set(Q.map(q => q.marks))].sort((a, b) => a - b).map(m => [m, String(m)]), 'marks');
+$$('#f-units .chipbtn').forEach(b => { b.title = UNITS[b.dataset.v]; });
+
+function topicOptions(units) {
+  let html = '<option value="">All topics</option>';
+  for (const u of Object.keys(UNITS)) {
+    if (units && units.length && !units.includes(u)) continue;
+    html += `<optgroup label="${esc(u + ' ' + UNITS[u])}">`;
+    for (const c of Object.keys(TOPICS)) if (c.split('.')[0] === u) {
+      const n = Q.filter(q => q.topics.includes(c)).length;
+      html += `<option value="${c}">${c} ${esc(TOPICS[c])} (${n})</option>`;
+    }
+    html += '</optgroup>';
+  }
+  return html;
+}
+function fillTopicSelect() {
+  const sel = $('#f-topic');
+  sel.innerHTML = topicOptions(st.f.units);
+  if (st.f.topic && st.f.units.length && !st.f.units.includes(st.f.topic.split('.')[0])) st.f.topic = '';
+  sel.value = st.f.topic;
+}
+fillTopicSelect();
+$('#f-paper').innerHTML = '<option value="">All papers</option>' + [...PAPERS].reverse().map(p => `<option value="${p.ref}">${p.ref} (${p.series} ${p.year})</option>`).join('');
+const CMDS = [...new Set(Q.map(q => q.command_word))].sort();
+$('#f-cmd').innerHTML = '<option value="">Any command word</option>' + CMDS.map(c => `<option>${esc(c)}</option>`).join('');
+
+$('#f-q').addEventListener('input', e => { st.f.q = e.target.value; renderResults(true); });
+$('#f-topic').addEventListener('change', e => { st.f.topic = e.target.value; renderResults(true); });
+$('#f-main').addEventListener('change', e => { st.f.main = e.target.checked; renderResults(true); });
+$('#f-paper').addEventListener('change', e => { st.f.paper = e.target.value; renderResults(true); });
+$('#f-cmd').addEventListener('change', e => { st.f.cmd = e.target.value; renderResults(true); });
+for (const k of ['diagram', 'er', 'usable', 'intest']) $('#f-' + k).addEventListener('change', e => { st.f[k] = e.target.checked; renderResults(true); });
+$('#r-sort').addEventListener('change', e => { st.sort = e.target.value; renderResults(true); });
+$('#f-clear').addEventListener('click', () => { st.f = blankFilters(); fillTopicSelect(); syncControls(); renderResults(true); });
+$('#ids-clear').addEventListener('click', () => { st.f.ids = null; renderResults(true); });
+$('#filters-toggle').addEventListener('click', () => {
+  const f = $('#filters'); const c = f.classList.toggle('collapsed');
+  $('#filters-toggle').textContent = c ? 'Show filters' : 'Hide filters';
+  $('#filters-toggle').setAttribute('aria-expanded', String(!c));
+});
+if (window.matchMedia('(max-width: 900px)').matches) { $('#filters').classList.add('collapsed'); $('#filters-toggle').textContent = 'Show filters'; }
+
+function syncControls() {
+  const f = st.f;
+  $('#f-q').value = f.q; $('#f-topic').value = f.topic; $('#f-main').checked = f.main; $('#f-paper').value = f.paper; $('#f-cmd').value = f.cmd;
+  for (const k of ['diagram', 'er', 'usable', 'intest']) $('#f-' + k).checked = f[k];
+  const sync = (id, arr) => $$(id + ' .chipbtn').forEach(b => b.setAttribute('aria-pressed', String(arr.map(String).includes(b.dataset.v))));
+  sync('#f-units', f.units); sync('#f-years', f.years); sync('#f-series', f.series); sync('#f-sections', f.sections); sync('#f-marks', f.marks);
+}
+
+// ---------- browse ----------
+function matches(q) {
+  const f = st.f;
+  if (f.ids) return f.ids.includes(q.id);
+  if (f.q) {
+    const hay = (q.question_text + ' ' + q.key_concepts.join(' ') + ' ' + (q.context || '') + ' ' + q.paper_ref + ' ' + (q.stimulus_title || '')).toLowerCase();
+    if (!f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
+  }
+  const tops = f.main ? [q.primary_topic] : q.topics;
+  if (f.units.length && !tops.some(t => f.units.includes(t.split('.')[0]))) return false;
+  if (f.topic && !tops.includes(f.topic)) return false;
+  if (f.years.length && !f.years.includes(q.year)) return false;
+  if (f.series.length && !f.series.includes(q.series)) return false;
+  if (f.paper && q.paper_ref !== f.paper) return false;
+  if (f.sections.length && !f.sections.includes(q.area)) return false;
+  if (f.marks.length && !f.marks.includes(q.marks)) return false;
+  if (f.cmd && q.command_word !== f.cmd) return false;
+  if (f.diagram && !q.diagram) return false;
+  if (f.er && !q.examiner_comment) return false;
+  if (f.usable && isUnusable(q)) return false;
+  if (f.intest && !basket.includes(q.id)) return false;
+  return true;
+}
+const paperIdx = Object.fromEntries(PAPERS.map((p, i) => [p.ref, i]));
+const qOrder = q => paperIdx[q.paper_ref] * 1000 + Q.indexOf(q);
+function sorted(list) {
+  const s = st.sort;
+  if (s === 'old') return list.sort((a, b) => qOrder(a) - qOrder(b));
+  if (s === 'marks') return list.sort((a, b) => b.marks - a.marks || qOrder(b) - qOrder(a));
+  if (s === 'topic') return list.sort((a, b) => a.primary_topic.localeCompare(b.primary_topic, undefined, { numeric: true }) || qOrder(b) - qOrder(a));
+  return list.sort((a, b) => paperIdx[b.paper_ref] - paperIdx[a.paper_ref] || Q.indexOf(a) - Q.indexOf(b));
+}
+
+function card(q, opts = {}) {
+  const inTest = basket.includes(q.id);
+  const flags = (q.flags || []).map(f => `<div class="flag">${esc(f)}</div>`).join('');
+  const topics = q.topics.map(t => `<button class="tag${t === q.primary_topic ? ' main' : ''}" data-topic="${t}" title="Show all questions on ${esc(topicName(t))}">${t} ${esc(topicName(t))}</button>`).join('');
+  const extra = [q.command_word + (q.command_word_2 ? ' + ' + q.command_word_2 : ''), q.diagram ? 'Diagram' : '', q.ao3_marks ? `${q.ao3_marks} evaluation mark${q.ao3_marks > 1 ? 's' : ''}` : '', isOld(q) ? '2020–22 syllabus' : '']
+    .filter(Boolean).map(x => `<span class="tag plain">${esc(x)}</span>`).join('');
+  const sec = q.section === 'A' ? `Section A · ${esc(q.stimulus_title || 'Data response')}` : `Section ${q.section} · ${esc(q.section_name || sectionName[q.section])}${isOld(q) ? ` (${q.area === 'micro' ? 'micro' : 'macro'})` : ''} · ${q.choice}`;
+  const btn = (act, label, show = true) => show ? `<button class="btn" data-act="${act}" aria-expanded="false">${label}</button>` : '';
+  return `<article class="q" data-id="${q.id}">
+    <div class="q-head"><span class="q-ref">${q.paper_ref}</span><span class="q-lbl">Q${esc(q.label)}</span><span class="q-sec">${sec}</span><span class="q-mk">[${q.marks}]</span></div>
+    <p class="q-text">${esc(q.question_text)}</p>
+    <div class="tags">${topics}${extra}</div>
+    ${flags}
+    <div class="acts">
+      ${btn('ms', 'Mark scheme')}${btn('er', 'Examiner report', !!q.examiner_comment)}${btn('src', 'Source extract', q.section === 'A' && !!(D.stimuli[stimKey(q)] || {}).text)}${btn('sim', `Similar (${q.similar_to.length})`, q.similar_to.length > 0)}
+      <span class="spacer"></span>
+      ${opts.noAdd ? '' : addBtns(q)}
+    </div>
+    <div class="panel" data-panel hidden></div>
+  </article>`;
+}
+function wholeLabel(q) {
+  const ids = SIBS[qKey(q)]; const all = ids.every(id => basket.includes(id));
+  const parts = ids.map(id => byId[id]); const m = parts.reduce((s, p) => s + p.marks, 0);
+  return [all, all ? `All of Q${q.question} in test ✓` : `Add all of Q${q.question} ${partLabel(parts[0])}–${partLabel(parts[parts.length - 1]).replace(/\(i+v?\)$/, '')} [${m}]`];
+}
+function addBtns(q) {
+  const inTest = basket.includes(q.id);
+  let h = `<button class="btn add" data-act="add" aria-pressed="${inTest}">${inTest ? 'Part in test ✓' : 'Add this part'}</button>`;
+  if (SIBS[qKey(q)].length > 1) { const [all, label] = wholeLabel(q); h = `<button class="btn add" data-act="addq" aria-pressed="${all}" title="Add or remove every part of this question">${esc(label)}</button>` + h; }
+  return h;
+}
+function refreshAddButtons() {
+  for (const art of $$('article.q')) {
+    const q = byId[art.dataset.id]; const a = art.querySelector('[data-act="add"]'); if (!a) continue;
+    const on = basket.includes(q.id); a.setAttribute('aria-pressed', String(on)); a.textContent = on ? 'Part in test ✓' : 'Add this part';
+    const w = art.querySelector('[data-act="addq"]'); if (w) { const [all, label] = wholeLabel(q); w.setAttribute('aria-pressed', String(all)); w.textContent = label; }
+  }
+}
+function toggleQuestion(q) {
+  const ids = SIBS[qKey(q)];
+  if (ids.every(id => basket.includes(id))) basket = basket.filter(id => !ids.includes(id));
+  else for (const id of ids) if (!basket.includes(id)) basket.push(id);
+  saveBasket();
+}
+function panelHtml(q, act) {
+  if (act === 'ms') {
+    let h = `<h4>Mark scheme · ${q.marking}${q.ms_page ? ` · mark scheme page ${q.ms_page}` : ''}</h4>${fmt(q.mark_scheme)}`;
+    if (isLevels(q)) h += `<details><summary class="note" style="cursor:pointer">Generic level descriptors (Tables A and B)</summary><div class="src" style="font-family:var(--font-ui);font-size:.84rem">${esc(D.levels.A)}\n\n${esc(D.levels.B)}</div></details>`;
+    return h;
+  }
+  if (act === 'er') return `<h4>Principal examiner report</h4>${fmt(q.examiner_comment)}`;
+  if (act === 'src') { const s = D.stimuli[stimKey(q)] || {}; return `<h4>${esc(s.title || 'Source extract')}${s.complete ? '' : ' · partly removed for copyright in the public paper'}</h4><div class="src">${esc(s.text || '')}</div>`; }
+  if (act === 'sim') return `<h4>Similar questions in other papers</h4>` + q.similar_to.map(x => { const o = byId[x.id]; return `<div class="sim-item"><span class="mono">${o.paper_ref} · Q${esc(o.label)} · [${o.marks}] · ${Math.round(x.similarity * 100)}% similar wording</span><span style="font-family:var(--font-read)">${esc(o.question_text)}</span></div>`; }).join('') +
+    `<p style="margin-top:8px"><button class="btn" data-act="simshow">Show these together</button></p>`;
+  return '';
+}
+function onCardClick(e) {
+  const tagBtn = e.target.closest('.tag[data-topic]');
+  if (tagBtn) { st.f = blankFilters(); st.f.topic = tagBtn.dataset.topic; fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
+  const b = e.target.closest('[data-act]'); if (!b) return;
+  const art = b.closest('.q'); const q = byId[art.dataset.id]; const act = b.dataset.act;
+  if (act === 'add') { toggleBasket(q.id); refreshAddButtons(); return; }
+  if (act === 'addq') { toggleQuestion(q); refreshAddButtons(); return; }
+  if (act === 'simshow') { st.f = blankFilters(); st.f.ids = [q.id, ...q.similar_to.map(x => x.id)]; st.f.idsLabel = `Q${q.label} from ${q.paper_ref} and ${q.similar_to.length} similar question${q.similar_to.length > 1 ? 's' : ''}`; syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
+  const panel = art.querySelector('[data-panel]');
+  const wasOpen = !panel.hidden && panel.dataset.act === act;
+  art.querySelectorAll('[data-act][aria-expanded]').forEach(x => x.setAttribute('aria-expanded', 'false'));
+  if (wasOpen) { panel.hidden = true; panel.dataset.act = ''; return; }
+  panel.innerHTML = panelHtml(q, act); panel.dataset.act = act; panel.hidden = false; b.setAttribute('aria-expanded', 'true');
+}
+$('#r-list').addEventListener('click', onCardClick);
+
+function renderResults(reset) {
+  if (reset) st.shown = 30;
+  const list = sorted(Q.filter(matches));
+  const marks = list.reduce((s, q) => s + q.marks, 0);
+  $('#r-count').innerHTML = `${list.length} question part${list.length === 1 ? '' : 's'} <span>· ${marks} marks</span>`;
+  $('#ids-banner').hidden = !st.f.ids; $('#ids-banner-text').textContent = st.f.ids ? 'Showing ' + st.f.idsLabel : '';
+  $('#r-list').innerHTML = list.length ? list.slice(0, st.shown).map(q => card(q)).join('') : '<div class="empty">No question parts match these filters. Try removing one.</div>';
+  $('#r-more').hidden = list.length <= st.shown;
+  $('#r-more').textContent = `Show more (${list.length - st.shown} left)`;
+}
+$('#r-more').addEventListener('click', () => { st.shown += 30; renderResults(false); });
+
+function toggleBasket(id) {
+  const i = basket.indexOf(id);
+  if (i >= 0) basket.splice(i, 1); else basket.push(id);
+  saveBasket();
+}
+
+// ---------- patterns ----------
+const UNIT_OF = c => c.split('.')[0];
+function cellStats() {
+  const m = {};
+  for (const c of Object.keys(TOPICS)) { m[c] = {}; for (const p of PAPERS) m[c][p.ref] = { marks: 0, mainParts: 0, parts: 0 }; }
+  for (const q of Q) {
+    for (const t of q.topics) if (m[t]) m[t][q.paper_ref].parts++;
+    if (m[q.primary_topic]) { m[q.primary_topic][q.paper_ref].marks += q.marks; m[q.primary_topic][q.paper_ref].mainParts++; }
+  }
+  return m;
+}
+const STATS = cellStats();
+function bucket(v, mode) {
+  if (!v) return 0;
+  const cuts = mode === 'marks' ? [4, 8, 12, 20] : [1, 2, 3, 4];
+  let b = 1; for (const c of cuts) if (v > c) b++;
+  return Math.min(b, 5);
+}
+function lastSeen(c) {
+  for (let i = PAPERS.length - 1; i >= 0; i--) if (STATS[c][PAPERS[i].ref].parts) return PAPERS[i];
+  return null;
+}
+function renderHeat() {
+  const mode = st.heatMode;
+  const years = [...new Set(PAPERS.map(p => p.year))];
+  let h = '<thead><tr class="yr"><th></th>' + years.map(y => `<th colspan="${PAPERS.filter(p => p.year === y).length}">${y}</th>`).join('') + '<th></th><th></th></tr>';
+  h += '<tr><th class="t" style="background:var(--surface)"></th>' + PAPERS.map(p => `<th title="${p.ref}">${p.ses}<br>${p.variant}</th>`).join('') +
+    `<th style="text-align:right;padding:0 10px">${mode === 'marks' ? 'Marks' : 'Parts'}</th><th style="text-align:left;padding:0 10px">Last seen</th></tr></thead><tbody>`;
+  let curUnit = '';
+  for (const c of Object.keys(TOPICS)) {
+    const u = UNIT_OF(c);
+    if (u !== curUnit) { curUnit = u; h += `<tr class="unit"><th colspan="${PAPERS.length + 3}">${u} · ${esc(UNITS[u])}</th></tr>`; }
+    let total = 0;
+    h += `<tr><th class="t" scope="row"><b>${c}</b>${esc(TOPICS[c])}</th>`;
+    for (const p of PAPERS) {
+      const s = STATS[c][p.ref]; const v = mode === 'marks' ? s.marks : s.parts; total += v;
+      h += `<td class="h h${bucket(v, mode)}" data-t="${c}" data-p="${p.ref}">${v || ''}</td>`;
+    }
+    const ls = lastSeen(c);
+    h += `<td class="sum">${total}</td><td class="last${ls ? '' : ' never'}">${ls ? ls.ses + ' ' + ls.yy : 'Not yet examined'}</td></tr>`;
+  }
+  $('#heat').innerHTML = h + '</tbody>';
+  const cuts = mode === 'marks' ? ['1–4', '5–8', '9–12', '13–20', '21+'] : ['1', '2', '3', '4', '5+'];
+  $('#heat-legend').innerHTML = `<span>${mode === 'marks' ? 'Marks where this is the main topic' : 'Question parts tagged with the topic'}:</span><i style="background:var(--h0);border:1px solid var(--line)"></i><span>0</span>` +
+    cuts.map((c, i) => `<i style="background:var(--h${i + 1})"></i><span>${c}</span>`).join('');
+}
+const tip = $('#tip');
+$('#heat').addEventListener('mousemove', e => {
+  const td = e.target.closest('td.h'); if (!td) { tip.hidden = true; return; }
+  const s = STATS[td.dataset.t][td.dataset.p];
+  tip.innerHTML = `<b>${td.dataset.t} ${esc(TOPICS[td.dataset.t])}</b><br>${td.dataset.p}<br>${s.marks} marks as main topic (${s.mainParts} part${s.mainParts === 1 ? '' : 's'})<br>${s.parts} part${s.parts === 1 ? '' : 's'} tagged in total`;
+  tip.hidden = false;
+  const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
+  tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
+});
+$('#heat').addEventListener('mouseleave', () => { tip.hidden = true; });
+$('#heat').addEventListener('click', e => {
+  const td = e.target.closest('td.h'); if (!td) return;
+  st.f = blankFilters(); st.f.topic = td.dataset.t; st.f.paper = td.dataset.p; st.f.main = st.heatMode === 'marks';
+  fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+});
+$('#heat-mode').addEventListener('click', e => {
+  const b = e.target.closest('.chipbtn'); if (!b) return;
+  st.heatMode = b.dataset.mode; $$('#heat-mode .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderHeat();
+});
+
+// frequency: share of papers in which a topic is the main topic of at least one part
+st.freqScope = 'all'; st.freqSort = 'freq';
+const TIERS = [[75, 'Almost every paper'], [50, 'Most papers'], [25, 'Often'], [1, 'Occasionally'], [0, 'Not examined']];
+const tierOf = pct => TIERS.findIndex(([min]) => pct >= min);
+function renderFreq() {
+  const papers = PAPERS.filter(p => st.freqScope === 'all' || p.year >= 2023);
+  const n = papers.length;
+  const years = [...new Set(papers.map(p => p.year))];
+  const totalMarks = Q.filter(q => papers.some(p => p.ref === q.paper_ref)).reduce((s, q) => s + q.marks, 0);
+  const pct = (a, b) => b ? Math.round(a / b * 100) : 0;
+  const rows = Object.keys(TOPICS).map(c => {
+    const mainP = papers.filter(p => STATS[c][p.ref].mainParts).length;
+    const anyP = papers.filter(p => STATS[c][p.ref].parts).length;
+    const marks = papers.reduce((s, p) => s + STATS[c][p.ref].marks, 0);
+    const byYear = years.map(y => { const ps = papers.filter(p => p.year === y); return { y, k: ps.filter(p => STATS[c][p.ref].mainParts).length, n: ps.length }; });
+    let last = null; for (let i = papers.length - 1; i >= 0; i--) if (STATS[c][papers[i].ref].mainParts) { last = papers[i]; break; }
+    return { c, mainP, anyP, marks, mainPct: pct(mainP, n), anyPct: pct(anyP, n), share: marks / totalMarks * 100, byYear, last };
+  });
+  if (st.freqSort === 'freq') rows.sort((a, b) => b.mainP - a.mainP || b.anyP - a.anyP || b.marks - a.marks);
+  if (st.freqSort === 'marks') rows.sort((a, b) => b.marks - a.marks || b.mainP - a.mainP);
+  $('#freq-note').textContent = `${n} papers${st.freqScope === 'new' ? ' set on the current syllabus (2023 onwards)' : ` (${PAPERS[0].series} ${PAPERS[0].year} to ${PAPERS[PAPERS.length - 1].series} ${PAPERS[PAPERS.length - 1].year})`}. "In % of papers" counts a paper when the topic is the main topic of at least one question part, including optional essays a candidate could skip. "Any mention" also counts parts where it is a secondary topic. Year columns show the same % for each year's papers. Click a row to see the questions.`;
+  // unit summary
+  const uRows = Object.keys(UNITS).map(u => {
+    const mk = rows.filter(r => UNIT_OF(r.c) === u).reduce((s, r) => s + r.marks, 0);
+    return [`${u} ${UNIT_SHORT[u] || UNITS[u]}`, Math.round(mk / totalMarks * 100), UNITS[u]];
+  });
+  bars($('#unit-bars'), uRows, '%');
+  let h = `<thead><tr><th>Topic</th><th>In % of papers</th><th style="text-align:right">Any mention</th><th style="text-align:right">Share of marks</th><th>How often</th>` +
+    years.map(y => `<th class="yc">${y}</th>`).join('') + `<th>Last main topic</th></tr></thead><tbody>`;
+  let curUnit = '';
+  for (const r of rows) {
+    const u = UNIT_OF(r.c);
+    if (st.freqSort === 'syl' && u !== curUnit) { curUnit = u; h += `<tr class="unit"><th colspan="${6 + years.length}">${u} · ${esc(UNITS[u])}</th></tr>`; }
+    const ti = tierOf(r.mainPct);
+    h += `<tr data-t="${r.c}" title="Show the questions on ${esc(TOPICS[r.c])}"><th class="t" scope="row"><b>${r.c}</b>${esc(TOPICS[r.c])}</th>` +
+      `<td><div class="fbar"><div class="track"><div class="fill" style="width:${r.mainPct}%"></div></div><span class="p">${r.mainPct}%</span></div><span class="note">${r.mainP} of ${n} papers</span></td>` +
+      `<td class="n">${r.anyPct}%</td><td class="n">${r.share.toFixed(1)}%</td><td><span class="tier t${4 - ti}">${TIERS[ti][1]}</span></td>` +
+      r.byYear.map(b => { const p = pct(b.k, b.n); return `<td class="yc"><span class="h${p ? Math.min(5, 1 + Math.floor(p / 20.001)) : 0}" title="${b.y}: main topic in ${b.k} of ${b.n} papers">${p}</span></td>`; }).join('') +
+      `<td class="${r.last ? '' : 'note'}" style="white-space:nowrap">${r.last ? r.last.ses + ' ' + r.last.yy + ' · ' + r.last.variant : 'Not yet'}</td></tr>`;
+  }
+  $('#freq').innerHTML = h + '</tbody>';
+}
+for (const [id, key] of [['#freq-scope', 'freqScope'], ['#freq-sort', 'freqSort']]) $(id).addEventListener('click', e => {
+  const b = e.target.closest('.chipbtn'); if (!b) return;
+  st[key] = b.dataset.v; $$(id + ' .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderFreq();
+});
+$('#freq').addEventListener('click', e => {
+  const tr = e.target.closest('tr[data-t]'); if (!tr) return;
+  st.f = blankFilters(); st.f.topic = tr.dataset.t; st.f.main = true;
+  if (st.freqScope === 'new') st.f.years = YEARS.filter(y => y >= 2023);
+  fillTopicSelect(); syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+});
+
+function bars(el, rows, unit) {
+  const max = Math.max(...rows.map(r => r[1]), 1);
+  el.innerHTML = rows.map(([label, v, title]) => `<div class="bar-row" title="${esc(title || '')}"><span>${esc(label)}</span><div class="track"><div class="fill" style="width:${(v / max * 100).toFixed(1)}%"></div></div><span class="val">${v}${unit || ''}</span></div>`).join('');
+}
+const THEMES = [
+  ['Evaluation missing or weak', /(few|did not|no|little|rarely|lack\w*|without|failed to|summative|assertive)\b[^.]{0,80}(evaluat|judgement|conclusion)/i],
+  ['Misread the question or command word', /command word|not the question|misread|misunderst|rather than (the|what)|did not (address|answer|focus)/i],
+  ['Diagram errors', /(label|incorrect\w* diagram|inaccurate[^.]{0,20}diagram|micro rather than macro|diagram[^.]{0,60}(error|incorrect|poor|inaccura))/i],
+  ['One-sided answers', /one[- ]sided/i],
+  ['Description instead of analysis', /(descri\w+|knowledge)[^.]{0,60}(rather than|without|instead of)[^.]{0,30}(analys|explain|appl)|display of knowledge|merely assert|simply (describ|list)/i],
+];
+function renderPatterns() {
+  renderFreq();
+  renderHeat();
+  // facts
+  const totals = Object.keys(TOPICS).map(c => [c, Q.filter(q => q.primary_topic === c).reduce((s, q) => s + q.marks, 0)]).sort((a, b) => b[1] - a[1]);
+  const never = Object.keys(TOPICS).filter(c => !lastSeen(c));
+  const elastic = Q.filter(q => q.marks === 12 && q.primary_topic === '2.2').length;
+  const redacted = Q.filter(isUnusable).length;
+  const facts = [
+    ['Most examined', `${totals[0][0]} ${TOPICS[totals[0][0]]}`, `${totals[0][1]} marks as the main topic, then ${totals[1][0]} ${TOPICS[totals[1][0]]} (${totals[1][1]})`],
+    ['Not yet examined', never.length ? never.map(c => c + ' ' + TOPICS[c]).join(', ') : 'None', `Across all ${PAPERS.length} papers in the tracker`],
+    ['Favourite essay', 'Which elasticity matters most to a firm', `${elastic} twelve-mark essays with elasticities as the main topic`],
+    ['Unanswerable public parts', `${redacted} question parts`, 'Need a table or figure that Cambridge removed from the public paper'],
+  ];
+  $('#facts').innerHTML = facts.map(([k, v, d]) => `<div class="fact"><div class="k">${esc(k)}</div><div class="v">${esc(v)}</div><div class="d">${esc(d)}</div></div>`).join('');
+  // command words
+  const cw = {}; for (const q of Q) cw[q.command_word] = (cw[q.command_word] || 0) + 1;
+  bars($('#cmd-bars'), Object.entries(cw).sort((a, b) => b[1] - a[1]));
+  // examiner themes
+  const withEr = Q.filter(q => q.examiner_comment);
+  const papersWithEr = new Set(withEr.map(q => q.paper_ref)).size;
+  $('#er-note').textContent = `${withEr.length} parts from ${papersWithEr} papers with a report · keyword-based, so counts are approximate`;
+  bars($('#er-bars'), THEMES.map(([label, re]) => [label, withEr.filter(q => re.test(q.examiner_comment)).length, '']), '');
+  // clusters
+  renderClusters(false);
+  // examiner key messages
+  const er = D.examiner_reports;
+  $('#er-papers').innerHTML = Object.keys(er).sort((a, b) => (paperIdx[b] ?? 0) - (paperIdx[a] ?? 0)).map(ref =>
+    `<details class="er"><summary>${ref} · ${esc((PAPERS.find(p => p.ref === ref) || {}).series || '')} ${(PAPERS.find(p => p.ref === ref) || {}).year || ''}</summary><h4 class="note" style="margin:10px 0 4px">Key messages</h4>${fmt(er[ref].key_messages)}${er[ref].general ? `<h4 class="note" style="margin:10px 0 4px">General comments</h4>${fmt(er[ref].general)}` : ""}</details>`).join('') || '<p class="note">No examiner reports loaded yet.</p>';
+}
+function clusters() {
+  const parent = {};
+  const find = x => { while (parent[x] !== x) { parent[x] = parent[parent[x]]; x = parent[x]; } return x; };
+  for (const q of Q) for (const s of q.similar_to) {
+    if (parent[q.id] == null) parent[q.id] = q.id;
+    if (parent[s.id] == null) parent[s.id] = s.id;
+    const a = find(q.id), b = find(s.id); if (a !== b) parent[a] = b;
+  }
+  const groups = {};
+  for (const id of Object.keys(parent)) (groups[find(id)] = groups[find(id)] || []).push(id);
+  return Object.values(groups).map(ids => ids.map(i => byId[i]).sort((a, b) => paperIdx[a.paper_ref] - paperIdx[b.paper_ref]))
+    .sort((a, b) => b.length - a.length || b.reduce((s, q) => s + q.marks, 0) - a.reduce((s, q) => s + q.marks, 0));
+}
+function renderClusters(all) {
+  const cl = clusters();
+  const show = all ? cl : cl.slice(0, 8);
+  $('#clusters').innerHTML = show.map(g => {
+    const topic = g[0].primary_topic;
+    return `<div class="cluster"><h3>${topic} ${esc(TOPICS[topic])} · ${g.length} papers</h3>` +
+      g.map(q => `<div class="row"><span class="mono r">${q.paper_ref} Q${esc(q.label)}</span><span class="t">${esc(q.question_text)}</span><span class="mono" style="text-align:right">[${q.marks}]</span></div>`).join('') +
+      `<div><button class="btn" data-ids="${g.map(q => q.id).join(',')}">Open in Browse</button></div></div>`;
+  }).join('');
+  $('#clusters-more').hidden = all || cl.length <= 8;
+  $('#clusters-more').textContent = `Show all ${cl.length} recurring questions`;
+}
+$('#clusters-more').addEventListener('click', () => renderClusters(true));
+$('#clusters').addEventListener('click', e => {
+  const b = e.target.closest('[data-ids]'); if (!b) return;
+  st.f = blankFilters(); st.f.ids = b.dataset.ids.split(','); st.f.idsLabel = `${st.f.ids.length} recurring questions`;
+  syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 });
+});
+
+// ---------- test builder ----------
+const today = new Date(); $('#d-date').value = today.toISOString().slice(0, 10);
+for (const id of ['d-title', 'd-class', 'd-instr']) { const v = store.get(id, null); if (v != null) $('#' + id).value = v; }
+for (const id of ['d-title', 'd-class', 'd-date', 'd-instr', 'd-extracts', 'd-lines']) $('#' + id).addEventListener('input', () => { if (['d-title', 'd-class', 'd-instr'].includes(id)) store.set(id, $('#' + id).value); renderPreview(); });
+$('#a-unit').innerHTML = topicOptions().replace('All topics', 'Any topic') + Object.keys(UNITS).map(u => `<option value="unit:${u}">Whole of unit ${u}: ${esc(UNITS[u])}</option>`).join('');
+
+function groupsOf(ids) {
+  const groups = [];
+  for (const id of ids) {
+    const q = byId[id]; const key = q.paper_ref + '|' + q.question;
+    const last = groups[groups.length - 1];
+    if (last && last.key === key) last.items.push(q); else groups.push({ key, items: [q] });
+  }
+  return groups;
+}
+const partLabel = q => q.label.replace(/^\d/, '');
+function renderBuild() {
+  const qs = basket.map(id => byId[id]);
+  const marks = qs.reduce((s, q) => s + q.marks, 0);
+  const groups = groupsOf(basket);
+  $('#t-marks').textContent = marks; $('#t-qs').textContent = groups.length; $('#t-parts').textContent = qs.length; $('#t-mins').textContent = marks * 2;
+  $('#basket-empty').hidden = qs.length > 0; $('#b-clear').hidden = qs.length === 0;
+  const cut = (t, n) => t.length > n ? t.slice(0, n) + '…' : t;
+  $('#basket').innerHTML = groups.map((g, gi) => {
+    const f = g.items[0]; const all = SIBS[g.key]; const m = g.items.reduce((s, q) => s + q.marks, 0);
+    const head = f.section === 'A' ? `Data response · ${f.stimulus_title || ''}` : cut(byId[all[0]].question_text, 110);
+    const missing = all.filter(id => !basket.includes(id)).map(id => byId[id]);
+    return `<div class="b-group" data-key="${esc(g.key)}">
+      <div class="b-head"><div class="t"><span class="mono">${f.paper_ref} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}</div>
+        <div class="ctl"><button data-b="up" aria-label="Move question up" ${gi === 0 ? 'disabled' : ''}>↑</button><button data-b="down" aria-label="Move question down" ${gi === groups.length - 1 ? 'disabled' : ''}>↓</button><button data-b="rmq" aria-label="Remove the whole question" title="Remove the whole question">×</button></div></div>
+      ${all.length > 1 ? g.items.map(q => `<div class="b-part"><span><span class="mono">${esc(partLabel(q))} [${q.marks}]</span> ${esc(cut(q.question_text, 80))}</span><button data-b="rm" data-id="${q.id}" aria-label="Remove part ${esc(q.label)}" title="Remove this part">×</button></div>`).join('') : ''}
+      ${missing.length ? `<div class="b-missing"><span class="note">Not included:</span>${missing.map(q => `<button data-b="addpart" data-id="${q.id}" title="${esc(cut(q.question_text, 120))}">+ ${esc(partLabel(q))} [${q.marks}]</button>`).join('')}</div>` : ''}
+    </div>`;
+  }).join('');
+  renderPreview();
+}
+$('#basket').addEventListener('click', e => {
+  const b = e.target.closest('[data-b]'); if (!b) return;
+  const key = b.closest('.b-group').dataset.key; const act = b.dataset.b;
+  if (act === 'rm') basket = basket.filter(id => id !== b.dataset.id);
+  if (act === 'addpart') basket.push(b.dataset.id);
+  if (act === 'rmq') basket = basket.filter(id => qKey(byId[id]) !== key);
+  if (act === 'up' || act === 'down') {
+    const gs = groupsOf(basket); const i = gs.findIndex(g => g.key === key); const j = act === 'up' ? i - 1 : i + 1;
+    if (j >= 0 && j < gs.length) { [gs[i], gs[j]] = [gs[j], gs[i]]; basket = gs.flatMap(g => g.items.map(q => q.id)); }
+  }
+  saveBasket(); renderBuild();
+});
+let clearArmed = false;
+$('#b-clear').addEventListener('click', () => {
+  if (!clearArmed) { clearArmed = true; $('#b-clear').textContent = 'Click again to remove all'; setTimeout(() => { clearArmed = false; $('#b-clear').textContent = 'Remove all'; }, 3000); return; }
+  clearArmed = false; basket = []; saveBasket(); renderBuild(); $('#b-clear').textContent = 'Remove all';
+});
+$('#view-tabs').addEventListener('click', e => {
+  const b = e.target.closest('.chipbtn'); if (!b) return;
+  st.view = b.dataset.view; $$('#view-tabs .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderPreview();
+});
+
+function details() {
+  return { title: $('#d-title').value.trim() || 'Economics test', cls: $('#d-class').value.trim(), date: $('#d-date').value, instr: $('#d-instr').value.trim(),
+    extracts: $('#d-extracts').checked, lines: $('#d-lines').checked };
+}
+const niceDate = iso => { if (!iso) return ''; const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); };
+function renderPreview() {
+  if (st.tab !== 'build') return;
+  const d = details(); const groups = groupsOf(basket);
+  const marks = basket.reduce((s, id) => s + byId[id].marks, 0);
+  if (!basket.length) { $('#preview').innerHTML = '<div class="empty" style="font-family:var(--font-ui)">Your paper will appear here as you add questions.</div>'; return; }
+  let h = `<h2>${esc(d.title)}${st.view === 'ms' ? ' · Mark scheme' : ''}</h2><div class="meta">${esc([d.cls, niceDate(d.date), `${marks} marks`, st.view === 'paper' ? `${marks * 2} minutes` : ''].filter(Boolean).join(' · '))}</div>`;
+  if (st.view === 'paper' && d.instr) h += `<p style="font-family:var(--font-ui);font-size:.9rem;margin:0 0 18px">${esc(d.instr)}</p>`;
+  let extractsDone = new Set();
+  groups.forEach((g, gi) => {
+    const first = g.items[0];
+    if (st.view === 'paper' && d.extracts && first.section === 'A' && !extractsDone.has(stimKey(first))) {
+      const s = D.stimuli[stimKey(first)] || {};
+      if (s.text) { extractsDone.add(stimKey(first)); h += `<div class="extract"><b>${esc(s.title || '')}</b>\n\n${esc(s.text)}${s.complete ? '' : '\n\n[Some of this source was removed from the published paper for copyright.]'}\n\n[Charts and tables from the original paper may not reproduce cleanly as text.]</div>`; }
+    }
+    g.items.forEach((q, qi) => {
+      const num = qi === 0 ? `${gi + 1}` : '';
+      const pl = g.items.length > 1 ? partLabel(q) : '';
+      h += `<div class="pq"><div class="pq-line"><span class="num">${num}${pl ? ' ' + esc(pl) : ''}</span><span>${esc(q.question_text)}</span><span class="mk">[${q.marks}]</span></div>
+        <div class="srcline">Cambridge ${q.paper_ref} Q${esc(q.label)}</div>`;
+      if (st.view === 'ms') h += `<div class="ms">${fmt(q.mark_scheme)}${q.examiner_comment ? `<p><i>Examiner report:</i> ${esc(q.examiner_comment)}</p>` : ''}</div>`;
+      h += '</div>';
+    });
+  });
+  if (st.view === 'ms' && basket.some(id => isLevels(byId[id]))) h += `<div class="pq"><b style="font-family:var(--font-ui)">Level descriptors for 12-mark parts</b><div class="extract" style="margin-left:0">${esc(D.levels.A)}\n\n${esc(D.levels.B)}</div></div>`;
+  $('#preview').innerHTML = h;
+}
+
+function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+$('#a-go').addEventListener('click', () => {
+  const sel = $('#a-unit').value; const target = Math.max(1, Number($('#a-target').value) || 40);
+  const format = $('#a-format').value; const usable = $('#a-usable').checked; const noRep = $('#a-repeats').checked;
+  const topicOk = q => !sel || (sel.startsWith('unit:') ? q.topics.some(t => UNIT_OF(t) === sel.slice(5)) : q.topics.includes(sel));
+  const taken = new Set(basket);
+  const near = new Set(basket.flatMap(id => byId[id].similar_to.map(s => s.id)));
+  const units = [];
+  if (format === 'essay' || format === 'mixed') {
+    const essayKeys = new Set(Q.filter(q => q.section !== 'A' && topicOk(q)).map(q => q.paper_ref + '|' + q.question));
+    for (const k of essayKeys) { const parts = Q.filter(q => q.paper_ref + '|' + q.question === k); units.push(parts); }
+  }
+  if (format === 'datawhole') {
+    for (const k of new Set(Q.filter(q => q.section === 'A' && topicOk(q)).map(qKey))) units.push(SIBS[k].map(id => byId[id]));
+  } else if (format !== 'essay') for (const q of Q) if (q.section === 'A' && topicOk(q)) units.push([q]);
+  let total = basket.reduce((s, id) => s + byId[id].marks, 0); const start = total; const added = [];
+  for (const u of shuffle(units)) {
+    const m = u.reduce((s, q) => s + q.marks, 0);
+    if (total - start + m > target) continue;
+    if (u.some(q => taken.has(q.id))) continue;
+    if (usable && u.some(isUnusable)) continue;
+    if (noRep && u.some(q => near.has(q.id))) continue;
+    for (const q of u) { basket.push(q.id); taken.add(q.id); added.push(q.id); q.similar_to.forEach(s => near.add(s.id)); }
+    total += m;
+    if (total - start >= target) break;
+  }
+  saveBasket(); renderBuild();
+  const st2 = $('#a-status');
+  if (!added.length) { st2.className = 'status err'; st2.textContent = 'No questions fit. Pick a broader topic, another question type or a higher target.'; }
+  else { st2.className = 'status ok'; st2.textContent = `Added ${added.length} question parts (${total - start} marks).${total - start < target ? ' That is all that fits these settings.' : ''}`; }
+});
+
+// downloads (Word)
+let downloads = null;
+function loadDocx() {
+  if (window.docx) return Promise.resolve(window.docx);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdn.jsdelivr.net/npm/docx@8.5.0/build/index.umd.js';
+    s.onload = () => window.docx ? res(window.docx) : rej(new Error('docx missing'));
+    s.onerror = () => rej(new Error('load failed'));
+    document.head.appendChild(s);
+  });
+}
+// DOCX-START
+function buildDocx(docx, spec) {
+  const { Document, Paragraph, TextRun, AlignmentType, Footer, PageNumber, TabStopType, Table, TableRow, TableCell, WidthType, BorderStyle, ShadingType } = docx;
+  const PAGE_W = 11906, PAGE_H = 16838, MARGIN = 850, CONTENT = PAGE_W - 2 * MARGIN; // A4, 1.5 cm margins, 18 cm text width
+  const P = (text, o = {}) => new Paragraph({ spacing: { after: o.after ?? 120 }, alignment: o.align, indent: o.indent, tabStops: o.tabs, keepNext: o.keepNext,
+    children: (Array.isArray(text) ? text : [text]).map(t => typeof t === 'string' ? new TextRun({ text: t, bold: o.bold, italics: o.italics, size: o.size, color: o.color }) : t) });
+  const none = { style: BorderStyle.NONE, size: 0, color: 'FFFFFF' };
+  const thin = { style: BorderStyle.SINGLE, size: 4, color: 'A6A6A6' };
+  const body = [];
+  body.push(P(spec.title, { bold: true, size: 32, after: 60 }));
+  body.push(P(spec.subtitle, { size: 20, color: '444444', after: 200 }));
+  if (spec.infoRows && spec.infoRows.length) {
+    const half = Math.round(CONTENT / 2);
+    body.push(new Table({ width: { size: CONTENT, type: WidthType.DXA }, columnWidths: [half, CONTENT - half],
+      rows: spec.infoRows.map(r => new TableRow({ children: r.map((c, i) => new TableCell({ width: { size: i ? CONTENT - half : half, type: WidthType.DXA },
+        borders: { top: thin, bottom: thin, left: thin, right: thin }, margins: { top: 80, bottom: 80, left: 120, right: 120 },
+        children: [P([new TextRun({ text: c[0] + ': ', bold: true, size: 20 }), new TextRun({ text: c[1] || '', size: 20 })], { after: 0 })] })) })) }));
+    body.push(P('', { after: 120 }));
+  }
+  if (spec.instructions) body.push(P(spec.instructions, { size: 20, italics: true, after: 240 }));
+  for (const block of spec.blocks) {
+    if (block.type === 'extract') {
+      body.push(new Table({ width: { size: CONTENT, type: WidthType.DXA }, columnWidths: [CONTENT], rows: [new TableRow({ children: [new TableCell({
+        width: { size: CONTENT, type: WidthType.DXA }, shading: { type: ShadingType.CLEAR, color: 'auto', fill: 'F2F2F2' },
+        borders: { top: thin, bottom: thin, left: thin, right: thin }, margins: { top: 120, bottom: 120, left: 160, right: 160 },
+        children: [P(block.title, { bold: true, after: 100 }), ...block.text.split(/\n{2,}/).map(par => P(par.replace(/\n/g, ' '), { size: 20, after: 100 }))] })] })] }));
+      body.push(P('', { after: 120 }));
+    } else if (block.type === 'question') {
+      body.push(P([new TextRun({ text: block.num, bold: true }), new TextRun({ text: '\t' + block.text }), new TextRun({ text: '\t[' + block.marks + ']', bold: true })],
+        { tabs: [{ type: TabStopType.LEFT, position: 680 }, { type: TabStopType.RIGHT, position: CONTENT }], indent: { left: 680, hanging: 680 }, after: 40, keepNext: true }));
+      body.push(P(block.source, { size: 16, color: '777777', indent: { left: 680 }, after: block.lines || block.ms ? 80 : 240 }));
+      for (let i = 0; i < (block.lines || 0); i++) body.push(new Paragraph({ spacing: { before: 0, after: 0, line: 420 }, indent: { left: 680 },
+        border: { bottom: { style: BorderStyle.DOTTED, size: 6, color: '999999', space: 1 } }, children: [new TextRun('')] }));
+      if (block.lines) body.push(P('', { after: 200 }));
+      if (block.ms) {
+        for (const line of block.ms.split('\n').filter(l => l.trim())) {
+          const bullet = /^[•\-]\s?/.test(line);
+          body.push(P(bullet ? line.replace(/^[•\-]\s*/, '') : line, { size: 20, indent: bullet ? { left: 1000, hanging: 280 } : { left: 680 }, after: 60 }));
+        }
+        if (block.er) body.push(P([new TextRun({ text: 'Examiner report: ', bold: true, italics: true, size: 18 }), new TextRun({ text: block.er, italics: true, size: 18 })], { indent: { left: 680 }, after: 60 }));
+        body.push(P('', { after: 160 }));
+      }
+    } else if (block.type === 'heading') {
+      body.push(P(block.text, { bold: true, size: 24, after: 120, keepNext: true }));
+    } else if (block.type === 'plain') {
+      for (const line of block.text.split('\n').filter(l => l.trim())) body.push(P(line, { size: 18, after: 40 }));
+    }
+  }
+  body.push(P(spec.credit, { size: 16, color: '777777', after: 0 }));
+  return new Document({
+    creator: 'Econ Past Paper Tracker', title: spec.title,
+    styles: { default: { document: { run: { font: 'Arial', size: 22 } } } },
+    sections: [{
+      properties: { page: { size: { width: PAGE_W, height: PAGE_H }, margin: { top: MARGIN, right: MARGIN, bottom: MARGIN, left: MARGIN, header: 425, footer: 425 } } },
+      footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ children: [PageNumber.CURRENT], size: 18 })] })] }) },
+      children: body,
+    }],
+  });
+}
+// DOCX-END
+function docSpec(kind) {
+  const d = details(); const groups = groupsOf(basket);
+  const marks = basket.reduce((s, id) => s + byId[id].marks, 0);
+  const blocks = []; const done = new Set();
+  groups.forEach((g, gi) => {
+    const first = g.items[0];
+    if (kind === 'paper' && d.extracts && first.section === 'A' && !done.has(stimKey(first))) {
+      const s = D.stimuli[stimKey(first)] || {};
+      if (s.text) { done.add(stimKey(first)); blocks.push({ type: 'extract', title: s.title || 'Source', text: s.text + (s.complete ? '' : '\n\n[Some of this source was removed from the published paper for copyright.]') + '\n\n[Charts and tables from the original paper may not reproduce cleanly as text.]' }); }
+    }
+    g.items.forEach((q, qi) => {
+      const pl = g.items.length > 1 ? partLabel(q) : '';
+      blocks.push({ type: 'question', num: (qi === 0 ? String(gi + 1) : '') + (pl ? ' ' + pl : ''), text: q.question_text, marks: q.marks, source: `Cambridge ${q.paper_ref} Q${q.label}`,
+        lines: kind === 'paper' && d.lines ? Math.ceil(q.marks * 1.5) : 0, ms: kind === 'ms' ? q.mark_scheme : '', er: kind === 'ms' ? (q.examiner_comment || '') : '' });
+    });
+  });
+  if (kind === 'ms' && basket.some(id => isLevels(byId[id]))) { blocks.push({ type: 'heading', text: 'Level descriptors for 12-mark parts' }); blocks.push({ type: 'plain', text: D.levels.A + '\n\n' + D.levels.B }); }
+  return {
+    title: d.title + (kind === 'ms' ? ' – Mark scheme' : ''),
+    subtitle: [d.cls, niceDate(d.date), `${marks} marks`, kind === 'paper' ? `${marks * 2} minutes` : ''].filter(Boolean).join(' · '),
+    infoRows: kind === 'paper' ? [[['Name', ''], ['Class', d.cls]], [['Date', niceDate(d.date)], ['Total marks', `      / ${marks}`]]] : [],
+    instructions: kind === 'paper' ? d.instr : '',
+    blocks,
+    credit: 'Questions and mark schemes © Cambridge University Press & Assessment (9708 Economics). For internal school use.',
+  };
+}
+async function download(kind) {
+  const s = $('#dl-status');
+  if (!basket.length) { s.className = 'status err'; s.textContent = 'Add some questions first.'; return; }
+  // Outside Claude (e.g. GitHub Pages) there is no downloads capability: save with an ordinary browser download
+  const standalone = !(window.claude && window.claude.use);
+  if (!downloads && !standalone) { s.className = 'status err'; s.textContent = 'Saving files is not available in this view. Use Copy as text instead.'; return; }
+  s.className = 'status'; s.textContent = 'Preparing the Word file…';
+  try {
+    const docx = await loadDocx();
+    const blob = await docx.Packer.toBlob(buildDocx(docx, docSpec(kind)));
+    const safe = details().title.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, ' ') || 'Economics test';
+    const filename = `${safe}${kind === 'ms' ? ' - mark scheme' : ''}.docx`;
+    if (downloads) await downloads.save({ filename, data: blob });
+    else {
+      const url = URL.createObjectURL(blob); const a = document.createElement('a');
+      a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 4000);
+    }
+    s.className = 'status ok'; s.textContent = 'Saved.';
+  } catch (e) {
+    s.className = 'status err';
+    const code = e && e.code;
+    s.textContent = code === 'declined' ? 'Download cancelled.' : code === 'rate_limited' ? 'A save is already waiting for your answer.' :
+      ['unavailable', 'not_granted', 'capability_disabled', 'capability_removed'].includes(code) ? 'Saving files is not available in this view. Use Copy as text instead.' :
+        e && e.message === 'load failed' ? 'Could not load the Word library. Check the connection and try again.' : 'Could not make the file. Try again.';
+  }
+}
+$('#dl-paper').addEventListener('click', () => download('paper'));
+$('#dl-ms').addEventListener('click', () => download('ms'));
+$('#copy-text').addEventListener('click', async () => {
+  const s = $('#dl-status');
+  const text = $('#preview').innerText;
+  try { await navigator.clipboard.writeText(text); s.className = 'status ok'; s.textContent = 'Copied. Paste it into Word or Google Docs.'; }
+  catch (e) {
+    const r = document.createRange(); r.selectNodeContents($('#preview')); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r);
+    s.className = 'status'; s.textContent = 'Press Ctrl+C (or ⌘C) to copy the selected text.';
+  }
+});
+
+// ---------- practice ----------
+let sample = null;
+let pState = { id: store.get('p-current', null), answer: '', result: null, revealed: false };
+let pHist = store.get('p-hist', []);
+function practicePool() {
+  const sel = $('#p-topic').value; const type = $('#p-type').value;
+  return Q.filter(q => !isUnusable(q) &&
+    (!sel || (sel.startsWith('unit:') ? q.topics.some(t => UNIT_OF(t) === sel.slice(5)) : q.topics.includes(sel))) &&
+    (type === 'any' || (type === 'short' ? q.section === 'A' : q.marks === Number(type))));
+}
+function renderPractice() {
+  $('#p-topic').innerHTML = topicOptions().replace('All topics', 'Any topic') + Object.keys(UNITS).map(u => `<option value="unit:${u}">Whole of unit ${u}: ${esc(UNITS[u])}</option>`).join('');
+  $('#p-topic').value = store.get('p-topic', ''); $('#p-type').value = store.get('p-type', 'any');
+  if (!pState.id || !byId[pState.id]) pickPractice(); else drawPractice();
+  drawHist();
+}
+function pickPractice() {
+  const pool = practicePool();
+  const recent = new Set(pHist.slice(0, 15).map(h => h.id));
+  const fresh = pool.filter(q => !recent.has(q.id) && q.id !== pState.id);
+  const pickFrom = fresh.length ? fresh : pool;
+  pState = { id: pickFrom.length ? pickFrom[Math.floor(Math.random() * pickFrom.length)].id : null, answer: '', result: null, revealed: false };
+  store.set('p-current', pState.id);
+  drawPractice();
+}
+$('#p-new').addEventListener('click', () => { store.set('p-topic', $('#p-topic').value); store.set('p-type', $('#p-type').value); pickPractice(); });
+function drawPractice() {
+  const el = $('#p-main');
+  const q = byId[pState.id];
+  if (!q) { el.innerHTML = '<div class="empty">No questions match. Choose another topic or question type.</div>'; return; }
+  const s = D.stimuli[stimKey(q)] || {};
+  const guide = isOld(q) && q.section !== 'A' ? (q.ao3_marks ? `Point-marked (2020–22 scheme), including ${q.ao3_marks} marks for evaluation and a conclusion.` : 'Point-marked (2020–22 scheme): knowledge, application and analysis only.') :
+    isLevels(q) ? 'Aim for developed analysis (8 marks) and a justified judgement (4 marks).' :
+    q.marks === 8 ? 'Up to 3 marks for knowledge, 3 for analysis and 2 for evaluation.' : q.ao3_marks ? `Includes ${q.ao3_marks} evaluation mark${q.ao3_marks > 1 ? 's' : ''}.` : 'Point-marked.';
+  el.innerHTML = `${card(q, { noAdd: true })}
+    ${q.section === 'A' && s.text ? `<details class="er" open><summary>Source: ${esc(s.title || '')}${s.complete ? '' : ' (partly removed for copyright)'}</summary><div class="src" style="font-family:var(--font-read);white-space:pre-wrap;margin-top:8px;max-height:340px;overflow:auto">${esc(s.text)}</div></details>` : ''}
+    <div class="card">
+      <label class="field">Your answer <span class="note" style="text-transform:none;letter-spacing:0;font-weight:400">${esc(guide)}${q.diagram ? ' You cannot draw here, so describe your diagram in words: axes, curves and the shift.' : ''}</span>
+        <textarea id="p-answer" placeholder="Write your answer here…"></textarea></label>
+      <div class="acts">
+        <button class="btn primary" id="p-mark" hidden>Mark my answer with Claude</button>
+        <button class="btn" id="p-stop" hidden>Stop</button>
+        <button class="btn" id="p-reveal">Show the mark scheme</button>
+        <span class="spacer"></span><span class="note" id="p-words"></span>
+      </div>
+      <p class="status" id="p-status" aria-live="polite"></p>
+    </div>
+    <div id="p-result"></div>`;
+  const ta = $('#p-answer'); ta.value = store.get('p-ans:' + q.id, '');
+  const words = () => { const n = ta.value.trim() ? ta.value.trim().split(/\s+/).length : 0; $('#p-words').textContent = `${n} words`; };
+  ta.addEventListener('input', () => { store.set('p-ans:' + q.id, ta.value); words(); }); words();
+  $('#p-main .q').addEventListener('click', onCardClick);
+  $('#p-mark').hidden = !sample;
+  $('#p-mark').addEventListener('click', markWithClaude);
+  $('#p-reveal').addEventListener('click', reveal);
+}
+function reveal() {
+  const q = byId[pState.id];
+  pState.revealed = true;
+  $('#p-result').innerHTML = `<div class="result"><h4>Mark scheme</h4>${fmt(q.mark_scheme)}
+    ${q.examiner_comment ? `<h4>What the examiner said about real answers</h4>${fmt(q.examiner_comment)}` : ''}
+    <div class="acts"><label class="field" style="grid-auto-flow:column;align-items:center;gap:8px">Your mark <input type="number" id="p-self" min="0" max="${q.marks}" style="width:80px"> / ${q.marks}</label><button class="btn" id="p-save">Save my mark</button></div></div>`;
+  $('#p-save').addEventListener('click', () => {
+    const v = Number($('#p-self').value);
+    if (!(v >= 0 && v <= q.marks)) { $('#p-status').className = 'status err'; $('#p-status').textContent = `Enter a mark from 0 to ${q.marks}.`; return; }
+    record(q, v, 'self'); $('#p-status').className = 'status ok'; $('#p-status').textContent = 'Saved.';
+  });
+}
+function record(q, mark, by) {
+  pHist = [{ id: q.id, mark, max: q.marks, by, at: Date.now() }, ...pHist.filter(h => !(h.id === q.id && h.by === by))].slice(0, 200);
+  store.set('p-hist', pHist); drawHist();
+}
+function drawHist() {
+  const el = $('#p-hist');
+  if (!pHist.length) { el.innerHTML = '<p class="note">Nothing yet. Your marks stay in this browser only.</p>'; return; }
+  const byTopic = {};
+  for (const h of pHist) { const q = byId[h.id]; if (!q) continue; const t = q.primary_topic; byTopic[t] = byTopic[t] || [0, 0, 0]; byTopic[t][0] += h.mark; byTopic[t][1] += h.max; byTopic[t][2]++; }
+  el.innerHTML = `<table class="hist"><thead><tr><th>Topic</th><th class="n">Tries</th><th class="n">Score</th></tr></thead><tbody>` +
+    Object.entries(byTopic).sort((a, b) => a[1][0] / a[1][1] - b[1][0] / b[1][1]).map(([t, v]) => `<tr><td title="${esc(TOPICS[t])}">${t} ${esc(TOPICS[t].split(' ').slice(0, 3).join(' '))}</td><td class="n">${v[2]}</td><td class="n">${Math.round(v[0] / v[1] * 100)}%</td></tr>`).join('') +
+    '</tbody></table><p class="note">Weakest topics first. Stored in this browser only.</p>';
+}
+let pCtl = null;
+async function markWithClaude() {
+  const q = byId[pState.id]; const ans = $('#p-answer').value.trim(); const status = $('#p-status');
+  if (ans.split(/\s+/).length < 15) { status.className = 'status err'; status.textContent = 'Write a fuller answer first (at least a few sentences).'; return; }
+  const s = D.stimuli[stimKey(q)] || {};
+  const rules = isOld(q) ? 'This is a 2020–22 syllabus question with a point-based mark scheme: award marks exactly as the mark scheme states, including every maximum and any reserved conclusion mark.' : isLevels(q) ? `Use the levels-based scheme. AO1 Knowledge and understanding plus AO2 Analysis out of 8 using Table A, and AO3 Evaluation out of 4 using Table B.\n\n${D.levels.A}\n\n${D.levels.B}` :
+    q.marks === 8 ? 'Point-based: up to 3 marks AO1 Knowledge and understanding, up to 3 marks AO2 Analysis, up to 2 marks AO3 Evaluation.' : 'Point-based marking exactly as the mark scheme states, including any maximums.';
+  const prompt = `You are an experienced Cambridge International AS Level Economics (9708) Paper 2 examiner. Mark the student's answer strictly against the official mark scheme. Be fair but not generous: credit only points the student actually makes, and follow every maximum in the mark scheme. The student typed the answer, so diagrams cannot be drawn: credit a clear written description of a diagram (axes, curves, shift, new equilibrium) as if drawn; otherwise do not award diagram marks and say so.
+
+QUESTION (${q.paper_ref} Q${q.label}, ${q.marks} marks):
+${q.question_text}
+${q.section === 'A' && s.text ? `\nSOURCE MATERIAL (${s.title}):\n${s.text.slice(0, 6000)}\n` : ''}
+MARKING APPROACH:
+${rules}
+
+OFFICIAL MARK SCHEME:
+${q.mark_scheme}
+${q.examiner_comment ? `\nPRINCIPAL EXAMINER'S REPORT ON THIS QUESTION:\n${q.examiner_comment}\n` : ''}
+STUDENT ANSWER:
+"""
+${ans.slice(0, 12000)}
+"""
+
+Reply with only a JSON object in this shape:
+{"mark": 5, "max": ${q.marks}, "level": "AO1/AO2 Level 2 (4/8), AO3 Level 1 (1/4) — or empty string for point-marked questions", "summary": "Two plain sentences on the overall quality.", "earned": ["each point that earned credit, with the marks it earned"], "missing": ["each creditworthy point from the mark scheme that the answer did not make"], "next_step": "One specific thing to do differently next time."}
+Write for an AS Level student whose first language may not be English: short, clear sentences.`;
+  pCtl = new AbortController();
+  $('#p-mark').disabled = true; $('#p-stop').hidden = false;
+  status.className = 'status'; status.textContent = 'Claude is marking your answer. This can take up to a minute…';
+  try {
+    const r = await sample.json(prompt, { signal: pCtl.signal });
+    const mark = Math.max(0, Math.min(q.marks, Math.round(Number(r.mark) || 0)));
+    const list = a => Array.isArray(a) && a.length ? '<ul>' + a.map(x => `<li>${esc(x)}</li>`).join('') + '</ul>' : '<p class="note">None.</p>';
+    $('#p-result').innerHTML = `<div class="result"><div class="score">${mark} <small>/ ${q.marks}</small></div>${r.level ? `<p class="note" style="margin:0">${esc(r.level)}</p>` : ''}
+      <p style="margin:0">${esc(r.summary || '')}</p><h4>What earned marks</h4>${list(r.earned)}<h4>What was missing</h4>${list(r.missing)}
+      <h4>Next time</h4><p style="margin:0">${esc(r.next_step || '')}</p>
+      <p class="note" style="margin:0">Claude's marking is a guide, not an official mark. Check it against the mark scheme.</p>
+      <div><button class="btn" id="p-reveal2">Show the mark scheme</button></div></div>`;
+    $('#p-reveal2').addEventListener('click', reveal);
+    record(q, mark, 'claude');
+    status.className = 'status ok'; status.textContent = 'Marked.';
+  } catch (e) {
+    const code = e && e.code;
+    status.className = 'status err';
+    if (code === 'cancelled') status.textContent = 'Stopped.';
+    else if (['not_granted', 'sampling_disabled', 'not_declared', 'capability_disabled', 'capability_removed'].includes(code)) { status.textContent = 'Marking with Claude is not available here. Use the mark scheme to mark it yourself.'; sample = null; $('#p-mark').hidden = true; }
+    else if (code === 'rate_limited') status.textContent = 'Too many requests just now. Wait a minute and try again.';
+    else if (code === 'invalid_json') status.textContent = 'The marking came back in an unexpected form. Try again.';
+    else if (code === 'session_expired') status.textContent = 'Please sign in again, then try again.';
+    else status.textContent = 'Marking did not finish. Try again in a moment.';
+  } finally {
+    $('#p-mark').disabled = false; $('#p-stop').hidden = true; pCtl = null;
+  }
+}
+document.addEventListener('click', e => { if (e.target && e.target.id === 'p-stop' && pCtl) pCtl.abort(); });
+
+// ---------- capabilities ----------
+(async () => {
+  try {
+    if (!window.claude || !window.claude.use) return;
+    const [dl, sm] = await Promise.all([window.claude.use('downloads').catch(() => null), window.claude.use('sample').catch(() => null)]);
+    downloads = dl; sample = sm;
+    if (!downloads) { $('#dl-paper').disabled = true; $('#dl-ms').disabled = true; $('#dl-paper').title = $('#dl-ms').title = 'Saving files is not available in this view'; }
+    if ($('#p-mark')) $('#p-mark').hidden = !sample;
+  } catch (e) { /* capabilities unavailable: page works without them */ }
+})();
+
+// ---------- boot ----------
+saveBasket();
+syncControls();
+renderResults(true);
+const start = (location.hash || '').replace('#', '');
+showTab(start || 'browse');
+})();
+</script>
