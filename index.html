@@ -122,7 +122,7 @@ textarea { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; min
 .list { display: grid; gap: 12px; }
 .q { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px 16px; display: grid; gap: 10px; min-width: 0; }
 .q-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 12px; }
-.q-ref { font-family: var(--font-mono); font-size: .82rem; color: var(--ink-2); }
+.q-ref { font-size: .86rem; font-weight: 700; color: var(--ink-2); }
 .q-lbl { font-weight: 900; }
 .q-sec { color: var(--muted); font-size: .84rem; }
 .q-mk { margin-left: auto; font-family: var(--font-read); font-weight: 600; font-variant-numeric: tabular-nums; }
@@ -133,6 +133,13 @@ textarea { font-family: var(--font-read); font-size: 1rem; line-height: 1.6; min
 .tag.main { font-weight: 700; }
 .tag.plain { background: none; border: 1px solid var(--line); color: var(--ink-2); cursor: default; }
 .flag { background: var(--warn-bg); color: var(--warn-ink); border-radius: 4px; padding: 3px 9px; font-size: .82rem; }
+.q.whole { gap: 12px; }
+.q.whole .q-lbl { font-size: 1.05rem; }
+.q.whole .parts { display: grid; gap: 8px; }
+.q.part { background: var(--surface-2); border-color: transparent; padding: 10px 14px; gap: 8px; }
+.q.part.hit { border-left: 4px solid var(--blue); }
+.q.part .q-text { font-size: 1rem; }
+.results-head .chips { margin-left: auto; }
 .acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .acts .spacer { flex: 1; }
 .add[aria-pressed="true"] { background: var(--orange); border-color: var(--orange); color: #2B1600; }
@@ -329,6 +336,10 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
         <div class="banner" id="ids-banner" hidden><span id="ids-banner-text"></span><button class="btn" id="ids-clear">Show all questions</button></div>
         <div class="results-head">
           <div class="count" id="r-count"></div>
+          <div class="chips" id="r-view" role="group" aria-label="Show">
+            <button class="chipbtn" data-v="parts" aria-pressed="true">Question parts</button>
+            <button class="chipbtn" data-v="whole" aria-pressed="false">Whole questions</button>
+          </div>
           <label class="field" style="grid-auto-flow:column;align-items:center;gap:8px">Sort
             <select id="r-sort">
               <option value="new">Newest paper first</option>
@@ -476,6 +487,7 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
   <section class="pane" id="pane-practice" role="tabpanel" aria-labelledby="tab-practice" hidden>
     <div class="practice">
       <aside class="card">
+        <label class="field">Your name <input type="text" id="p-name" placeholder="Name for your downloads" autocomplete="name"></label>
         <h2>Pick a question</h2>
         <div><p class="fieldset-title">Topics covered so far <span class="tp-sum" id="p-tp-sum"></span></p><div class="tp" id="p-tp"></div></div>
         <label class="field">Use a question when
@@ -498,6 +510,8 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
           <p class="fieldset-title">Your recent attempts</p>
           <div id="p-hist"></div>
         </div>
+        <button class="btn" id="p-pdf-all">Download all my answers (PDF)</button>
+        <p class="status" id="p-all-status" aria-live="polite"></p>
       </aside>
       <div style="display:grid;gap:14px;min-width:0" id="p-main"></div>
     </div>
@@ -544,8 +558,12 @@ function fmt(text) {
 const PAPERS = [];
 for (const q of Q) if (!PAPERS.some(p => p.ref === q.paper_ref)) {
   const [, v, s1, s2, yy] = q.paper_ref.split('/');
-  PAPERS.push({ ref: q.paper_ref, year: q.year, series: q.series, variant: v, ses: s1 + '/' + s2, yy, short: `${s1}/${s2} ${yy} · ${v}` });
+  const month = { 'Feb/March': 'March', 'May/June': 'June', 'Oct/Nov': 'November' }[q.series] || q.series;
+  PAPERS.push({ ref: q.paper_ref, year: q.year, series: q.series, variant: v, ses: s1 + '/' + s2, yy, month, mon: month.slice(0, 3),
+    name: `${month} ${yy} Question Paper ${v}`, short: `${month} ${yy} Paper ${v}` });
 }
+const PAPER_OF = Object.fromEntries(PAPERS.map(p => [p.ref, p]));
+const pname = ref => (PAPER_OF[ref] || {}).name || ref;   // e.g. 'June 26 Question Paper 24', as on the Cambridge site
 const SERIES = [...new Set(Q.map(q => q.series))];
 const YEARS = [...new Set(Q.map(q => q.year))].sort();
 const isUnusable = q => (q.flags || []).some(f => f.startsWith('Needs data'));
@@ -554,11 +572,11 @@ const topicName = c => TOPICS[c] || c;
 const sectionName = { A: 'Data response', B: 'Microeconomics essay', C: 'Macroeconomics essay' };
 const isLevels = q => (q.marking || '').startsWith('levels');  // 2023+ 12-mark parts; 2022 schemes are point-based
 const isOld = q => q.year <= 2022;  // 2020–22 syllabus papers
-$('#mast-stats').textContent = `${PAPERS.length} papers · ${Q.length} question parts · ${PAPERS[0].short.split(' · ')[0]} to ${PAPERS[PAPERS.length - 1].short.split(' · ')[0]}`;
+$('#mast-stats').textContent = `${PAPERS.length} papers · ${Q.length} question parts · ${PAPERS[0].month} ${PAPERS[0].yy} to ${PAPERS[PAPERS.length - 1].month} ${PAPERS[PAPERS.length - 1].yy}`;
 
 // ---------- state ----------
 const blankFilters = () => ({ q: '', topics: [], match: 'any', years: [], series: [], paper: '', sections: [], marks: [], cmd: '', diagram: false, er: false, usable: false, intest: false, ids: null, idsLabel: '' });
-const st = { tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
+const st = { bview: store.get('bview', 'parts'), tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
 const qKey = q => q.paper_ref + '|' + q.question;
 const SIBS = {}; for (const q of Q) (SIBS[qKey(q)] = SIBS[qKey(q)] || []).push(q.id);
 // keep every part of a question together, in paper order; questions stay in the order they were first added
@@ -655,7 +673,7 @@ chipGroup($('#f-sections'), [['data', 'Data response'], ['micro', 'Micro essay']
 chipGroup($('#f-marks'), [...new Set(Q.map(q => q.marks))].sort((a, b) => a - b).map(m => [m, String(m)]), 'marks');
 
 const fTP = topicPicker($('#f-tp'), () => st.f.topics, v => { st.f.topics = v; }, () => renderResults(true));
-$('#f-paper').innerHTML = '<option value="">All papers</option>' + [...PAPERS].reverse().map(p => `<option value="${p.ref}">${p.ref} (${p.series} ${p.year})</option>`).join('');
+$('#f-paper').innerHTML = '<option value="">All papers</option>' + [...PAPERS].reverse().map(p => `<option value="${p.ref}">${p.name}</option>`).join('');
 const CMDS = [...new Set(Q.map(q => q.command_word))].sort();
 $('#f-cmd').innerHTML = '<option value="">Any command word</option>' + CMDS.map(c => `<option>${esc(c)}</option>`).join('');
 
@@ -687,7 +705,7 @@ function matches(q) {
   const f = st.f;
   if (f.ids) return f.ids.includes(q.id);
   if (f.q) {
-    const hay = (q.question_text + ' ' + q.key_concepts.join(' ') + ' ' + (q.context || '') + ' ' + q.paper_ref + ' ' + (q.stimulus_title || '')).toLowerCase();
+    const hay = (q.question_text + ' ' + q.key_concepts.join(' ') + ' ' + (q.context || '') + ' ' + pname(q.paper_ref) + ' ' + (q.stimulus_title || '')).toLowerCase();
     if (!f.q.toLowerCase().split(/\s+/).filter(Boolean).every(w => hay.includes(w))) return false;
   }
   if (!topicMatch(q, f.topics, f.match)) return false;
@@ -721,15 +739,17 @@ function card(q, opts = {}) {
     .filter(Boolean).map(x => `<span class="tag plain">${esc(x)}</span>`).join('');
   const sec = q.section === 'A' ? `Section A · ${esc(q.stimulus_title || 'Data response')}` : `Section ${q.section} · ${esc(q.section_name || sectionName[q.section])}${isOld(q) ? ` (${q.area === 'micro' ? 'micro' : 'macro'})` : ''} · ${q.choice}`;
   const btn = (act, label, show = true) => show ? `<button class="btn" data-act="${act}" aria-expanded="false">${label}</button>` : '';
-  return `<article class="q" data-id="${q.id}">
-    <div class="q-head"><span class="q-ref">${q.paper_ref}</span><span class="q-lbl">Q${esc(q.label)}</span><span class="q-sec">${sec}</span><span class="q-mk">[${q.marks}]</span></div>
+  const head = opts.part ? `<div class="q-head"><span class="q-lbl">${esc(partLabel(q) || "Q" + q.label)}</span><span class="q-mk">[${q.marks}]</span></div>` :
+    `<div class="q-head"><span class="q-ref">${pname(q.paper_ref)}</span><span class="q-lbl">Q${esc(q.label)}</span><span class="q-sec">${sec}</span><span class="q-mk">[${q.marks}]</span></div>`;
+  return `<article class="q${opts.part ? ' part' + (opts.hit ? ' hit' : '') : ''}" data-id="${q.id}">
+    ${head}
     <p class="q-text">${esc(q.question_text)}</p>
     <div class="tags">${topics}${extra}</div>
     ${flags}
     <div class="acts">
-      ${btn('ms', 'Mark scheme')}${btn('er', 'Examiner report', !!q.examiner_comment)}${btn('src', 'Source extract', q.section === 'A' && !!(D.stimuli[stimKey(q)] || {}).text)}${btn('sim', `Similar (${q.similar_to.length})`, q.similar_to.length > 0)}
+      ${btn('ms', 'Mark scheme')}${btn('er', 'Examiner report', !!q.examiner_comment)}${btn('src', 'Source extract', !opts.part && q.section === 'A' && !!(D.stimuli[stimKey(q)] || {}).text)}${btn('sim', `Similar (${q.similar_to.length})`, q.similar_to.length > 0)}
       <span class="spacer"></span>
-      ${opts.noAdd ? '' : addBtns(q)}
+      ${opts.noAdd ? '' : opts.part ? addPartBtn(q) : addBtns(q)}
     </div>
     <div class="panel" data-panel hidden></div>
   </article>`;
@@ -739,6 +759,20 @@ function wholeLabel(q) {
   const parts = ids.map(id => byId[id]); const m = parts.reduce((s, p) => s + p.marks, 0);
   return [all, all ? `All of Q${q.question} in test ✓` : `Add all of Q${q.question} ${partLabel(parts[0])}–${partLabel(parts[parts.length - 1]).replace(/\(i+v?\)$/, '')} [${m}]`];
 }
+const addPartBtn = q => { const on = basket.includes(q.id); return `<button class="btn add" data-act="add" aria-pressed="${on}">${on ? 'Part in test ✓' : 'Add this part'}</button>`; };
+function wholeCard(ids, hits) {
+  const parts = ids.map(id => byId[id]); const f = parts[0]; const m = parts.reduce((s, q) => s + q.marks, 0);
+  const sec = f.section === 'A' ? `Section A · Data response · ${esc(f.stimulus_title || '')}` : `Section ${f.section} · ${esc(f.section_name || sectionName[f.section])}${isOld(f) ? ` (${f.area})` : ''} · ${esc(f.choice || '')}`;
+  const [all, label] = wholeLabel(f); const s = D.stimuli[stimKey(f)] || {};
+  const someHit = parts.some(q => hits.has(q.id)) && !parts.every(q => hits.has(q.id));
+  return `<article class="q whole" data-id="${f.id}">
+    <div class="q-head"><span class="q-ref">${pname(f.paper_ref)}</span><span class="q-lbl">Question ${f.question}</span><span class="q-sec">${sec}</span><span class="q-mk">[${m}]</span></div>
+    <div class="acts">${f.section === 'A' && s.text ? '<button class="btn" data-act="src" aria-expanded="false">Source extract</button>' : ''}<button class="btn" data-act="msall" aria-expanded="false">Mark scheme (all parts)</button>
+      <span class="spacer"></span>${someHit ? '<span class="note">Highlighted parts match your filters</span>' : ''}${parts.length > 1 ? `<button class="btn add" data-act="addq" aria-pressed="${all}">${esc(label)}</button>` : ''}</div>
+    <div class="panel" data-panel hidden></div>
+    <div class="parts">${parts.map(q => card(q, { part: true, hit: someHit && hits.has(q.id) })).join('')}</div>
+  </article>`;
+}
 function addBtns(q) {
   const inTest = basket.includes(q.id);
   let h = `<button class="btn add" data-act="add" aria-pressed="${inTest}">${inTest ? 'Part in test ✓' : 'Add this part'}</button>`;
@@ -747,9 +781,10 @@ function addBtns(q) {
 }
 function refreshAddButtons() {
   for (const art of $$('article.q')) {
-    const q = byId[art.dataset.id]; const a = art.querySelector('[data-act="add"]'); if (!a) continue;
-    const on = basket.includes(q.id); a.setAttribute('aria-pressed', String(on)); a.textContent = on ? 'Part in test ✓' : 'Add this part';
-    const w = art.querySelector('[data-act="addq"]'); if (w) { const [all, label] = wholeLabel(q); w.setAttribute('aria-pressed', String(all)); w.textContent = label; }
+    const q = byId[art.dataset.id]; const own = sel => [...art.querySelectorAll(sel)].find(x => x.closest('article.q') === art);
+    const a = own('[data-act="add"]');
+    if (a) { const on = basket.includes(q.id); a.setAttribute('aria-pressed', String(on)); a.textContent = on ? 'Part in test ✓' : 'Add this part'; }
+    const w = own('[data-act="addq"]'); if (w) { const [all, label] = wholeLabel(q); w.setAttribute('aria-pressed', String(all)); w.textContent = label; }
   }
 }
 function toggleQuestion(q) {
@@ -765,8 +800,10 @@ function panelHtml(q, act) {
     return h;
   }
   if (act === 'er') return `<h4>Principal examiner report</h4>${fmt(q.examiner_comment)}`;
+  if (act === 'msall') return SIBS[qKey(q)].map(id => { const p = byId[id]; return `<h4>${esc(partLabel(p) || 'Q' + p.label)} [${p.marks}] · ${esc(p.marking)}</h4>${fmt(p.mark_scheme)}`; }).join('') +
+    (SIBS[qKey(q)].some(id => isLevels(byId[id])) ? `<details><summary class="note" style="cursor:pointer">Generic level descriptors (Tables A and B)</summary><div class="src" style="font-family:var(--font-ui);font-size:.84rem">${esc(D.levels.A)}\n\n${esc(D.levels.B)}</div></details>` : '');
   if (act === 'src') { const s = D.stimuli[stimKey(q)] || {}; return `<h4>${esc(s.title || 'Source extract')}${s.complete ? '' : ' · partly removed for copyright in the public paper'}</h4><div class="src">${esc(s.text || '')}</div>`; }
-  if (act === 'sim') return `<h4>Similar questions in other papers</h4>` + q.similar_to.map(x => { const o = byId[x.id]; return `<div class="sim-item"><span class="mono">${o.paper_ref} · Q${esc(o.label)} · [${o.marks}] · ${Math.round(x.similarity * 100)}% similar wording</span><span style="font-family:var(--font-read)">${esc(o.question_text)}</span></div>`; }).join('') +
+  if (act === 'sim') return `<h4>Similar questions in other papers</h4>` + q.similar_to.map(x => { const o = byId[x.id]; return `<div class="sim-item"><span class="mono">${pname(o.paper_ref)} · Q${esc(o.label)} · [${o.marks}] · ${Math.round(x.similarity * 100)}% similar wording</span><span style="font-family:var(--font-read)">${esc(o.question_text)}</span></div>`; }).join('') +
     `<p style="margin-top:8px"><button class="btn" data-act="simshow">Show these together</button></p>`;
   return '';
 }
@@ -777,10 +814,10 @@ function onCardClick(e) {
   const art = b.closest('.q'); const q = byId[art.dataset.id]; const act = b.dataset.act;
   if (act === 'add') { toggleBasket(q.id); refreshAddButtons(); return; }
   if (act === 'addq') { toggleQuestion(q); refreshAddButtons(); return; }
-  if (act === 'simshow') { st.f = blankFilters(); st.f.ids = [q.id, ...q.similar_to.map(x => x.id)]; st.f.idsLabel = `Q${q.label} from ${q.paper_ref} and ${q.similar_to.length} similar question${q.similar_to.length > 1 ? 's' : ''}`; syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
-  const panel = art.querySelector('[data-panel]');
+  if (act === 'simshow') { st.f = blankFilters(); st.f.ids = [q.id, ...q.similar_to.map(x => x.id)]; st.f.idsLabel = `Q${q.label} from ${pname(q.paper_ref)} and ${q.similar_to.length} similar question${q.similar_to.length > 1 ? 's' : ''}`; syncControls(); showTab('browse'); renderResults(true); window.scrollTo({ top: 0 }); return; }
+  const panel = [...art.querySelectorAll('[data-panel]')].find(x => x.closest('article.q') === art);
   const wasOpen = !panel.hidden && panel.dataset.act === act;
-  art.querySelectorAll('[data-act][aria-expanded]').forEach(x => x.setAttribute('aria-expanded', 'false'));
+  art.querySelectorAll('[data-act][aria-expanded]').forEach(x => { if (x.closest('article.q') === art) x.setAttribute('aria-expanded', 'false'); });
   if (wasOpen) { panel.hidden = true; panel.dataset.act = ''; return; }
   panel.innerHTML = panelHtml(q, act); panel.dataset.act = act; panel.hidden = false; b.setAttribute('aria-expanded', 'true');
 }
@@ -790,6 +827,15 @@ function renderResults(reset) {
   if (reset) st.shown = 30;
   const list = sorted(Q.filter(matches));
   const marks = list.reduce((s, q) => s + q.marks, 0);
+  if (st.bview === 'whole') {
+    const hits = new Set(list.map(q => q.id)); const keys = [...new Set(list.map(qKey))];
+    $('#r-count').innerHTML = `${keys.length} whole question${keys.length === 1 ? '' : 's'} <span>· ${list.length} matching part${list.length === 1 ? '' : 's'}</span>`;
+    $('#ids-banner').hidden = !st.f.ids; $('#ids-banner-text').textContent = st.f.ids ? 'Showing ' + st.f.idsLabel : '';
+    $('#r-list').innerHTML = keys.length ? keys.slice(0, st.shown).map(k => wholeCard(SIBS[k], hits)).join('') : '<div class="empty">No questions match these filters. Try removing one.</div>';
+    $('#r-more').hidden = keys.length <= st.shown; $('#r-more').textContent = `Show more (${keys.length - st.shown} left)`;
+    $('#f-tp-sum').textContent = st.f.topics.length ? '· ' + topicSummary(st.f.topics) : '';
+    return;
+  }
   $('#f-tp-sum').textContent = st.f.topics.length ? '· ' + topicSummary(st.f.topics) : '';
   $('#r-count').innerHTML = `${list.length} question part${list.length === 1 ? '' : 's'} <span>· ${marks} marks</span>`;
   $('#ids-banner').hidden = !st.f.ids; $('#ids-banner-text').textContent = st.f.ids ? 'Showing ' + st.f.idsLabel : '';
@@ -798,6 +844,12 @@ function renderResults(reset) {
   $('#r-more').textContent = `Show more (${list.length - st.shown} left)`;
 }
 $('#r-more').addEventListener('click', () => { st.shown += 30; renderResults(false); });
+$('#r-view').addEventListener('click', e => {
+  const b = e.target.closest('.chipbtn'); if (!b) return;
+  st.bview = b.dataset.v; store.set('bview', st.bview);
+  $$('#r-view .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x === b))); renderResults(true);
+});
+$$('#r-view .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === st.bview)));
 
 function toggleBasket(id) {
   const i = basket.indexOf(id);
@@ -830,7 +882,7 @@ function renderHeat() {
   const mode = st.heatMode;
   const years = [...new Set(PAPERS.map(p => p.year))];
   let h = '<thead><tr class="yr"><th></th>' + years.map(y => `<th colspan="${PAPERS.filter(p => p.year === y).length}">${y}</th>`).join('') + '<th></th><th></th></tr>';
-  h += '<tr><th class="t" style="background:var(--surface)"></th>' + PAPERS.map(p => `<th title="${p.ref}">${p.ses}<br>${p.variant}</th>`).join('') +
+  h += '<tr><th class="t" style="background:var(--surface)"></th>' + PAPERS.map(p => `<th title="${p.name}">${p.mon}<br>${p.variant}</th>`).join('') +
     `<th style="text-align:right;padding:0 10px">${mode === 'marks' ? 'Marks' : 'Parts'}</th><th style="text-align:left;padding:0 10px">Last seen</th></tr></thead><tbody>`;
   let curUnit = '';
   for (const c of Object.keys(TOPICS)) {
@@ -843,7 +895,7 @@ function renderHeat() {
       h += `<td class="h h${bucket(v, mode)}" data-t="${c}" data-p="${p.ref}">${v || ''}</td>`;
     }
     const ls = lastSeen(c);
-    h += `<td class="sum">${total}</td><td class="last${ls ? '' : ' never'}">${ls ? ls.ses + ' ' + ls.yy : 'Not yet examined'}</td></tr>`;
+    h += `<td class="sum">${total}</td><td class="last${ls ? '' : ' never'}">${ls ? ls.short : 'Not yet examined'}</td></tr>`;
   }
   $('#heat').innerHTML = h + '</tbody>';
   const cuts = mode === 'marks' ? ['1–4', '5–8', '9–12', '13–20', '21+'] : ['1', '2', '3', '4', '5+'];
@@ -854,7 +906,7 @@ const tip = $('#tip');
 $('#heat').addEventListener('mousemove', e => {
   const td = e.target.closest('td.h'); if (!td) { tip.hidden = true; return; }
   const s = STATS[td.dataset.t][td.dataset.p];
-  tip.innerHTML = `<b>${td.dataset.t} ${esc(TOPICS[td.dataset.t])}</b><br>${td.dataset.p}<br>${s.marks} marks as main topic (${s.mainParts} part${s.mainParts === 1 ? '' : 's'})<br>${s.parts} part${s.parts === 1 ? '' : 's'} tagged in total`;
+  tip.innerHTML = `<b>${td.dataset.t} ${esc(TOPICS[td.dataset.t])}</b><br>${esc(pname(td.dataset.p))}<br>${s.marks} marks as main topic (${s.mainParts} part${s.mainParts === 1 ? '' : 's'})<br>${s.parts} part${s.parts === 1 ? '' : 's'} tagged in total`;
   tip.hidden = false;
   const x = Math.min(e.clientX + 14, window.innerWidth - tip.offsetWidth - 8);
   tip.style.left = x + 'px'; tip.style.top = (e.clientY + 16) + 'px';
@@ -908,7 +960,7 @@ function renderFreq() {
       `<td><div class="fbar"><div class="track"><div class="fill" style="width:${r.mainPct}%"></div></div><span class="p">${r.mainPct}%</span></div><span class="note">${r.mainP} of ${n} papers</span></td>` +
       `<td class="n">${r.anyPct}%</td><td class="n">${r.share.toFixed(1)}%</td><td><span class="tier t${4 - ti}">${TIERS[ti][1]}</span></td>` +
       r.byYear.map(b => { const p = pct(b.k, b.n); return `<td class="yc"><span class="h${p ? Math.min(5, 1 + Math.floor(p / 20.001)) : 0}" title="${b.y}: main topic in ${b.k} of ${b.n} papers">${p}</span></td>`; }).join('') +
-      `<td class="${r.last ? '' : 'note'}" style="white-space:nowrap">${r.last ? r.last.ses + ' ' + r.last.yy + ' · ' + r.last.variant : 'Not yet'}</td></tr>`;
+      `<td class="${r.last ? '' : 'note'}" style="white-space:nowrap">${r.last ? r.last.short : 'Not yet'}</td></tr>`;
   }
   $('#freq').innerHTML = h + '</tbody>';
 }
@@ -962,7 +1014,7 @@ function renderPatterns() {
   // examiner key messages
   const er = D.examiner_reports;
   $('#er-papers').innerHTML = Object.keys(er).sort((a, b) => (paperIdx[b] ?? 0) - (paperIdx[a] ?? 0)).map(ref =>
-    `<details class="er"><summary>${ref} · ${esc((PAPERS.find(p => p.ref === ref) || {}).series || '')} ${(PAPERS.find(p => p.ref === ref) || {}).year || ''}</summary><h4 class="note" style="margin:10px 0 4px">Key messages</h4>${fmt(er[ref].key_messages)}${er[ref].general ? `<h4 class="note" style="margin:10px 0 4px">General comments</h4>${fmt(er[ref].general)}` : ""}</details>`).join('') || '<p class="note">No examiner reports loaded yet.</p>';
+    `<details class="er"><summary>${esc(pname(ref))}</summary><h4 class="note" style="margin:10px 0 4px">Key messages</h4>${fmt(er[ref].key_messages)}${er[ref].general ? `<h4 class="note" style="margin:10px 0 4px">General comments</h4>${fmt(er[ref].general)}` : ""}</details>`).join('') || '<p class="note">No examiner reports loaded yet.</p>';
 }
 function clusters() {
   const parent = {};
@@ -983,7 +1035,7 @@ function renderClusters(all) {
   $('#clusters').innerHTML = show.map(g => {
     const topic = g[0].primary_topic;
     return `<div class="cluster"><h3>${topic} ${esc(TOPICS[topic])} · ${g.length} papers</h3>` +
-      g.map(q => `<div class="row"><span class="mono r">${q.paper_ref} Q${esc(q.label)}</span><span class="t">${esc(q.question_text)}</span><span class="mono" style="text-align:right">[${q.marks}]</span></div>`).join('') +
+      g.map(q => `<div class="row"><span class="mono r">${pname(q.paper_ref)} Q${esc(q.label)}</span><span class="t">${esc(q.question_text)}</span><span class="mono" style="text-align:right">[${q.marks}]</span></div>`).join('') +
       `<div><button class="btn" data-ids="${g.map(q => q.id).join(',')}">Open in Browse</button></div></div>`;
   }).join('');
   $('#clusters-more').hidden = all || cl.length <= 8;
@@ -1037,7 +1089,7 @@ function renderBuild() {
     const head = f.section === 'A' ? `Data response · ${f.stimulus_title || ''}` : cut(byId[all[0]].question_text, 110);
     const missing = all.filter(id => !basket.includes(id)).map(id => byId[id]);
     return `<div class="b-group" data-key="${esc(g.key)}">
-      <div class="b-head"><div class="t"><span class="mono">${f.paper_ref} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}</div>
+      <div class="b-head"><div class="t"><span class="mono">${pname(f.paper_ref)} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}</div>
         <div class="ctl"><button data-b="up" aria-label="Move question up" ${gi === 0 ? 'disabled' : ''}>↑</button><button data-b="down" aria-label="Move question down" ${gi === groups.length - 1 ? 'disabled' : ''}>↓</button><button data-b="rmq" aria-label="Remove the whole question" title="Remove the whole question">×</button></div></div>
       ${all.length > 1 ? g.items.map(q => `<div class="b-part"><span><span class="mono">${esc(partLabel(q))} [${q.marks}]</span> ${esc(cut(q.question_text, 80))}</span><button data-b="rm" data-id="${q.id}" aria-label="Remove part ${esc(q.label)}" title="Remove this part">×</button></div>`).join('') : ''}
       ${missing.length ? `<div class="b-missing"><span class="note">Not included:</span>${missing.map(q => `<button data-b="addpart" data-id="${q.id}" title="${esc(cut(q.question_text, 120))}">+ ${esc(partLabel(q))} [${q.marks}]</button>`).join('')}</div>` : ''}
@@ -1090,7 +1142,7 @@ function renderPreview() {
       const num = qi === 0 ? `${gi + 1}` : '';
       const pl = g.items.length > 1 ? partLabel(q) : '';
       h += `<div class="pq"><div class="pq-line"><span class="num">${num}${pl ? ' ' + esc(pl) : ''}</span><span>${esc(q.question_text)}</span><span class="mk">[${q.marks}]</span></div>
-        <div class="srcline">Cambridge ${q.paper_ref} Q${esc(q.label)}</div>`;
+        <div class="srcline">Cambridge ${pname(q.paper_ref)}, Q${esc(q.label)}</div>`;
       if (st.view === 'ms') h += `<div class="ms">${fmt(q.mark_scheme)}${q.examiner_comment ? `<p><i>Examiner report:</i> ${esc(q.examiner_comment)}</p>` : ''}</div>`;
       h += '</div>';
     });
@@ -1217,7 +1269,7 @@ function docSpec(kind) {
     }
     g.items.forEach((q, qi) => {
       const pl = g.items.length > 1 ? partLabel(q) : '';
-      blocks.push({ type: 'question', num: (qi === 0 ? String(gi + 1) : '') + (pl ? ' ' + pl : ''), text: q.question_text, marks: q.marks, source: `Cambridge ${q.paper_ref} Q${q.label}`,
+      blocks.push({ type: 'question', num: (qi === 0 ? String(gi + 1) : '') + (pl ? ' ' + pl : ''), text: q.question_text, marks: q.marks, source: `Cambridge ${pname(q.paper_ref)}, Q${q.label}`,
         lines: kind === 'paper' && d.lines ? Math.ceil(q.marks * 1.5) : 0, ms: kind === 'ms' ? q.mark_scheme : '', er: kind === 'ms' ? (q.examiner_comment || '') : '' });
     });
   });
@@ -1274,6 +1326,17 @@ $('#copy-text').addEventListener('click', async () => {
 let sample = null;
 let pState = { id: store.get('p-current', null), answer: '', result: null, revealed: false };
 let pHist = store.get('p-hist', []);
+$('#p-name').value = store.get('p-name', '');
+$('#p-name').addEventListener('input', e => store.set('p-name', e.target.value));
+$('#p-pdf-all').addEventListener('click', () => {
+  // every question with a saved answer, most recent attempt first
+  const ids = [];
+  try { for (let i = 0; i < localStorage.length; i++) { const k = localStorage.key(i); if (k.startsWith('pp9708:p-ans:') && byId[k.slice(13)] && String(store.get(k.slice(7), '')).trim()) ids.push(k.slice(13)); } } catch (e) { /* storage unavailable */ }
+  if (pState.id && !ids.includes(pState.id) && ($('#p-answer') || {}).value) ids.push(pState.id);
+  const last = id => Math.max(0, ...pHist.filter(h => h.id === id).map(h => h.at));
+  ids.sort((a, b) => last(b) - last(a));
+  practicePdf(ids, $('#p-all-status'));
+});
 const pTP = topicPicker($('#p-tp'), getCov, setCov, saveCovered);
 $('#p-match').value = coveredMatch;
 $('#p-match').addEventListener('change', e => { coveredMatch = e.target.value; $('#a-match').value = coveredMatch; saveCovered(); });
@@ -1315,6 +1378,7 @@ function drawPractice() {
         <button class="btn primary" id="p-mark" hidden>Mark my answer with Claude</button>
         <button class="btn" id="p-stop" hidden>Stop</button>
         <button class="btn" id="p-reveal">Show the mark scheme</button>
+        <button class="btn" id="p-pdf">Download my answer (PDF)</button>
         <span class="spacer"></span><span class="note" id="p-words"></span>
       </div>
       <p class="status" id="p-status" aria-live="polite"></p>
@@ -1327,6 +1391,7 @@ function drawPractice() {
   $('#p-mark').hidden = !sample;
   $('#p-mark').addEventListener('click', markWithClaude);
   $('#p-reveal').addEventListener('click', reveal);
+  $('#p-pdf').addEventListener('click', () => practicePdf([q.id], $('#p-status')));
 }
 function reveal() {
   const q = byId[pState.id];
@@ -1362,7 +1427,7 @@ async function markWithClaude() {
     q.marks === 8 ? 'Point-based: up to 3 marks AO1 Knowledge and understanding, up to 3 marks AO2 Analysis, up to 2 marks AO3 Evaluation.' : 'Point-based marking exactly as the mark scheme states, including any maximums.';
   const prompt = `You are an experienced Cambridge International AS Level Economics (9708) Paper 2 examiner. Mark the student's answer strictly against the official mark scheme. Be fair but not generous: credit only points the student actually makes, and follow every maximum in the mark scheme. The student typed the answer, so diagrams cannot be drawn: credit a clear written description of a diagram (axes, curves, shift, new equilibrium) as if drawn; otherwise do not award diagram marks and say so.
 
-QUESTION (${q.paper_ref} Q${q.label}, ${q.marks} marks):
+QUESTION (9708 ${pname(q.paper_ref)}, Q${q.label}, ${q.marks} marks):
 ${q.question_text}
 ${q.section === 'A' && s.text ? `\nSOURCE MATERIAL (${s.title}):\n${s.text.slice(0, 6000)}\n` : ''}
 MARKING APPROACH:
@@ -1392,6 +1457,7 @@ Write for an AS Level student whose first language may not be English: short, cl
       <p class="note" style="margin:0">Claude's marking is a guide, not an official mark. Check it against the mark scheme.</p>
       <div><button class="btn" id="p-reveal2">Show the mark scheme</button></div></div>`;
     $('#p-reveal2').addEventListener('click', reveal);
+    store.set('p-res:' + q.id, { mark, max: q.marks, level: r.level || '', summary: r.summary || '', earned: r.earned || [], missing: r.missing || [], next_step: r.next_step || '', at: Date.now() });
     record(q, mark, 'claude');
     status.className = 'status ok'; status.textContent = 'Marked.';
   } catch (e) {
@@ -1408,6 +1474,86 @@ Write for an AS Level student whose first language may not be English: short, cl
   }
 }
 document.addEventListener('click', e => { if (e.target && e.target.id === 'p-stop' && pCtl) pCtl.abort(); });
+
+// ---------- practice PDF ----------
+function loadJsPdf() {
+  if (window.jspdf) return Promise.resolve(window.jspdf);
+  return new Promise((res, rej) => {
+    const s = document.createElement('script');
+    s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+    s.onload = () => window.jspdf ? res(window.jspdf) : rej(new Error('load failed'));
+    s.onerror = () => rej(new Error('load failed'));
+    document.head.appendChild(s);
+  });
+}
+// the PDF's built-in fonts only cover Latin-1, so typographic characters are simplified
+const pdfText = t => String(t == null ? '' : t).replace(/[‘’‚′]/g, "'").replace(/[“”„″]/g, '"').replace(/[–—−]/g, '-').replace(/•/g, '-').replace(/…/g, '...')
+  .replace(/≥/g, '>=').replace(/≤/g, '<=').replace(/→/g, '->').replace(/×/g, 'x').replace(/\u00a0/g, ' ').normalize('NFKD').replace(/[\u0300-\u036f]/g, '').replace(/[^\x09\x0a\x0d\x20-\x7e\xa0-\xff]/g, '?');
+async function saveFile(blob, filename) {
+  if (downloads) return downloads.save({ filename, data: blob });
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+async function practicePdf(ids, status) {
+  const name = $('#p-name').value.trim();
+  if (!name) { status.className = 'status err'; status.textContent = 'Type your name at the top of Pick a question first.'; $('#p-name').focus(); return; }
+  const cur = $('#p-answer'); if (cur && pState.id) store.set('p-ans:' + pState.id, cur.value);
+  const items = ids.map(id => ({ q: byId[id], ans: String(store.get('p-ans:' + id, '')).trim() })).filter(x => x.q && x.ans);
+  if (!items.length) { status.className = 'status err'; status.textContent = 'Write an answer first.'; return; }
+  if (!downloads && window.claude && window.claude.use) { status.className = 'status err'; status.textContent = 'Saving files is not available in this view.'; return; }
+  status.className = 'status'; status.textContent = 'Making the PDF…';
+  try {
+    const { jsPDF } = await loadJsPdf();
+    const doc = new jsPDF({ unit: 'mm', format: 'a4' });
+    const M = 15, W = 210 - 2 * M, H = 297; let y = M;   // A4, 1.5 cm margins
+    const room = h => { if (y + h > H - M - 6) { doc.addPage(); y = M; } };
+    const write = (text, o = {}) => {
+      const size = o.size || 11, lh = size * 0.3528 * 1.4, ind = o.indent || 0;
+      doc.setFont('helvetica', o.bold ? 'bold' : o.italic ? 'italic' : 'normal'); doc.setFontSize(size); doc.setTextColor(o.color || '#111111');
+      for (const para of pdfText(text).split('\n')) {
+        const lines = doc.splitTextToSize(para.trim() ? para : ' ', W - ind - (o.bullet ? 4 : 0));
+        lines.forEach((l, i) => { room(lh); if (o.bullet && i === 0) doc.text('-', M + ind, y + lh * 0.75); doc.text(l, M + ind + (o.bullet ? 4 : 0), y + lh * 0.75); y += lh; });
+      }
+      y += o.after ?? 1.5;
+    };
+    const rule = () => { room(4); doc.setDrawColor(170); doc.setLineWidth(0.3); doc.line(M, y, M + W, y); y += 4; };
+    const today = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' });
+    items.forEach(({ q, ans }, i) => {
+      if (i) { doc.addPage(); y = M; }
+      write('AS Level Economics practice', { size: 16, bold: true, after: 1 });
+      write(`Name: ${name}      Date: ${today}`, { size: 11, after: 2 }); rule();
+      write(`Cambridge 9708 ${pname(q.paper_ref)}, Question ${q.label}  ·  ${q.marks} marks`, { bold: true, size: 11, after: 1 });
+      write(`Topic: ${q.primary_topic} ${topicName(q.primary_topic)}`, { size: 9.5, color: '#555555', after: 3 });
+      if (q.section === 'A' && q.stimulus_title) write(`Source: ${q.stimulus_title}`, { size: 10, italic: true, after: 2 });
+      write(q.question_text, { size: 11.5, after: 4 });
+      const words = ans.split(/\s+/).filter(Boolean).length;
+      write(`My answer (${words} words)`, { bold: true, size: 11, after: 1.5 });
+      write(ans, { size: 11, after: 4 }); rule();
+      const res = store.get('p-res:' + q.id, null); const self = pHist.find(h => h.id === q.id && h.by === 'self');
+      if (res) {
+        write(`Marked by Claude: ${res.mark} / ${res.max}`, { bold: true, size: 12, after: 1 });
+        write("Claude's marking is a guide, not an official Cambridge mark.", { size: 9, italic: true, color: '#555555', after: 2 });
+        if (res.level) write(res.level, { size: 10, after: 2 });
+        if (res.summary) write(res.summary, { size: 10.5, after: 2 });
+        if (res.earned.length) { write('What earned marks', { bold: true, size: 10.5, after: 1 }); res.earned.forEach(x => write(x, { size: 10, bullet: true, after: 0.5 })); y += 2; }
+        if (res.missing.length) { write('What was missing', { bold: true, size: 10.5, after: 1 }); res.missing.forEach(x => write(x, { size: 10, bullet: true, after: 0.5 })); y += 2; }
+        if (res.next_step) { write('Next time', { bold: true, size: 10.5, after: 1 }); write(res.next_step, { size: 10 }); }
+      }
+      if (self) write(`Self-marked against the mark scheme: ${self.mark} / ${self.max}`, { bold: true, size: 11, after: 2 });
+      if (!res && !self) write('Not marked yet.', { italic: true, size: 10.5, color: '#555555' });
+    });
+    const n = doc.getNumberOfPages();
+    for (let i = 1; i <= n; i++) { doc.setPage(i); doc.setFont('helvetica', 'normal'); doc.setFontSize(9); doc.setTextColor('#666666'); doc.text(`Page ${i} of ${n}`, 105, H - 8, { align: 'center' }); }
+    const safe = name.replace(/[^\w\- ]+/g, '').trim().replace(/\s+/g, ' ') || 'Student';
+    const filename = items.length === 1 ? `${safe} - ${pname(items[0].q.paper_ref)} Q${items[0].q.label}.pdf`.replace(/[()]/g, '') : `${safe} - Economics practice answers.pdf`;
+    await saveFile(doc.output('blob'), filename);
+    status.className = 'status ok'; status.textContent = items.length === 1 ? 'Saved.' : `Saved ${items.length} answers.`;
+  } catch (e) {
+    const code = e && e.code; status.className = 'status err';
+    status.textContent = code === 'declined' ? 'Download cancelled.' : e && e.message === 'load failed' ? 'Could not load the PDF library. Check the connection and try again.' : 'Could not make the PDF. Try again.';
+  }
+}
 
 // ---------- capabilities ----------
 (async () => {
