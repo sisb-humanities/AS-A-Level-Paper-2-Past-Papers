@@ -218,14 +218,14 @@ details.er p, details.er ul { max-width: 85ch; }
 
 /* builder */
 .builder { display: grid; grid-template-columns: minmax(0, 380px) minmax(0, 1fr); gap: 24px; align-items: start; }
-.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; display: grid; gap: 12px; min-width: 0; grid-template-columns: minmax(0, 1fr); }
 .card h2 { font-size: 1.05rem; font-weight: 900; }
 .basket { display: grid; gap: 6px; }
 .b-item { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; padding: 8px 0; border-bottom: 1px solid var(--line); align-items: start; }
 .b-item .t { font-size: .88rem; }
 .b-group { display: grid; gap: 4px; padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
 .b-head { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; align-items: start; }
-.b-head .t { font-size: .88rem; } .b-head .t .mono { color: var(--ink-2); }
+.b-head .t { font-size: .88rem; } .b-head .t .mono { color: var(--ink-2); font-family: var(--font-ui); font-weight: 700; font-size: .8rem; }
 .b-head .ctl, .b-part { display: flex; gap: 4px; }
 .b-head .ctl button, .b-part button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); flex: none; }
 .b-head .ctl button:disabled { opacity: .4; cursor: default; }
@@ -240,11 +240,25 @@ details.er p, details.er ul { max-width: 85ch; }
 .totals { display: flex; gap: 18px; font-variant-numeric: tabular-nums; flex-wrap: wrap; }
 .totals b { font-size: 1.3rem; font-weight: 900; display: block; }
 .totals span { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.xform { display: grid; gap: 8px; }
+.xrow { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; font-size: .88rem; color: var(--ink-2); }
+.xrow > span:first-child { font-weight: 700; color: var(--ink); min-width: 100%; }
+.xrow select { width: auto; padding: 4px 6px; font-size: .86rem; }
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .paper { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 28px clamp(16px, 4vw, 48px); font-family: var(--font-read); min-width: 0; }
 .paper h2 { font-family: var(--font-ui); font-size: 1.25rem; font-weight: 900; }
 .paper .meta { font-family: var(--font-ui); font-size: .88rem; color: var(--ink-2); margin: 4px 0 18px; }
 .pq { margin: 0 0 18px; }
+.psec { font-family: var(--font-ui); margin: 22px 0 14px; padding-top: 10px; border-top: 2px solid var(--ink); }
+.psec h3 { font-size: 1.05rem; font-weight: 900; margin: 0; }
+.psec p { margin: 2px 0 0; font-size: .9rem; font-style: italic; color: var(--ink-2); }
+.b-sec { display: flex; gap: 6px; align-items: center; margin-top: 10px; padding: 8px 0 2px; border-top: 2px solid var(--ink); }
+.b-sec:first-child { margin-top: 0; }
+.b-sec-t { flex: 1 1 60px; width: 60px; min-width: 0; font-weight: 900; padding: 4px 8px; }
+.b-sec select { width: auto; font-size: .84rem; padding: 4px 6px; }
+.b-sec button { border: 1px solid var(--line); background: var(--surface); border-radius: 4px; width: 28px; height: 28px; cursor: pointer; color: var(--ink-2); flex: none; }
+.b-sec-m { margin: 0 0 2px; }
+.b-move { display: block; margin-top: 4px; width: auto; font-size: .78rem; padding: 2px 4px; }
 .pq .num { font-weight: 600; }
 .pq-line { display: grid; grid-template-columns: 2.6em minmax(0, 1fr) auto; gap: 6px; align-items: baseline; }
 .pq-line .mk { font-variant-numeric: tabular-nums; }
@@ -420,8 +434,9 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
             <div title="About 2 minutes per mark, as in the exam"><b id="t-mins">0</b><span>minutes</span></div>
           </div>
           <div class="basket" id="basket"></div>
+          <p class="note" id="t-note" style="margin:-4px 0 0"></p>
           <p class="note" id="basket-empty">Add questions from Browse questions, or fill the test automatically below.</p>
-          <button class="btn" id="b-clear">Remove all</button>
+          <div class="acts"><button class="btn" id="b-addsec" title="Add a section, e.g. for essays where students choose one">+ Add section</button><span class="spacer"></span><button class="btn" id="b-clear">Remove all</button></div>
         </div>
         <div class="card">
           <h2>Fill automatically</h2>
@@ -434,7 +449,22 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
           </select>
           </label>
           <button class="btn" id="a-browse" type="button">See these questions in Browse</button>
-          <div class="grid2">
+          <div class="chips" id="a-mode" role="group" aria-label="How to fill">
+            <button class="chipbtn" data-v="exam" aria-pressed="true">Exam-style paper</button>
+            <button class="chipbtn" data-v="marks" aria-pressed="false">Up to a mark total</button>
+          </div>
+          <div id="a-mode-exam" class="xform">
+            <div class="chips" id="x-presets">
+              <button class="chipbtn" data-p="real" title="1 data response; Section B: 1 of 2 micro essays; Section C: 1 of 2 macro essays (60 marks)">Real exam</button>
+              <button class="chipbtn" data-p="one" title="1 data response, then 1 of 2 essays (40 marks)">Data response + 1 of 2 essays</button>
+              <button class="chipbtn" data-p="essays" title="Students answer 2 of 4 essays (40 marks)">Essays: 2 of 4</button>
+            </div>
+            <div class="xrow"><span>Data response questions</span><select id="x-dr" aria-label="Data response questions"><option>0</option><option selected>1</option><option>2</option><option>3</option></select><span class="note">answer all</span></div>
+            <div class="xrow"><span>Essay section</span>offer <select id="x-o1" aria-label="Essays offered in the first essay section"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select> answer <select id="x-n1" aria-label="Essays students answer"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select> from <select id="x-a1" aria-label="Topic area"><option value="any">any topic area</option><option value="micro">microeconomics</option><option value="macro">macroeconomics</option></select></div>
+            <div class="xrow"><span>Second essay section</span>offer <select id="x-o2" aria-label="Essays offered in the second essay section"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select> answer <select id="x-n2" aria-label="Essays students answer"><option selected>1</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select> from <select id="x-a2" aria-label="Topic area"><option value="any">any topic area</option><option value="micro">microeconomics</option><option value="macro">macroeconomics</option></select></div>
+            <p class="note" id="x-sum" style="margin:0"></p>
+          </div>
+          <div class="grid2" id="a-mode-marks" hidden>
             <label class="field">Target marks
               <input type="number" id="a-target" min="4" max="120" step="1" value="40">
             </label>
@@ -449,7 +479,7 @@ footer.foot { max-width: 1240px; margin: 0 auto; padding: 18px 16px 36px; color:
           </div>
           <label class="check"><input type="checkbox" id="a-usable" checked> Skip parts that need source data removed from the public paper</label>
           <label class="check"><input type="checkbox" id="a-repeats" checked> Avoid near-duplicate questions</label>
-          <button class="btn primary" id="a-go">Add questions</button>
+          <button class="btn primary" id="a-go">Build exam-style paper</button>
           <p class="status" id="a-status" aria-live="polite"></p>
         </div>
         <div class="card">
@@ -579,15 +609,46 @@ const blankFilters = () => ({ q: '', topics: [], match: 'any', years: [], series
 const st = { bview: store.get('bview', 'parts'), tab: 'browse', f: blankFilters(), sort: 'new', shown: 30, open: {}, heatMode: 'marks', view: 'paper' };
 const qKey = q => q.paper_ref + '|' + q.question;
 const SIBS = {}; for (const q of Q) (SIBS[qKey(q)] = SIBS[qKey(q)] || []).push(q.id);
-// keep every part of a question together, in paper order; questions stay in the order they were first added
+// Sections of the test: each has a title and a rule, 0 = answer all, n = answer n of the questions in it
+const newSecId = () => 's' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+const freshSections = () => [{ id: 's1', title: 'Section A', choose: 0 }];
+let sections = store.get('sections', null); if (!Array.isArray(sections) || !sections.length) sections = freshSections();
+let secOf = store.get('secOf', {}) || {};   // question key -> section id
+const isDR = k => byId[SIBS[k][0]].section === 'A';
+// a new question goes to the last section that already holds the same kind (data response or essay), else the last section
+function defaultSection(k, keys) {
+  for (let i = sections.length - 1; i >= 0; i--) if (keys.some(kk => kk !== k && secOf[kk] === sections[i].id && isDR(kk) === isDR(k))) return sections[i].id;
+  return sections[sections.length - 1].id;
+}
+// keep every part of a question together, in paper order; questions grouped by section, otherwise in the order they were added
 function normaliseBasket() {
   const order = [], seen = {};
   for (const id of basket) { const k = qKey(byId[id]); if (!seen[k]) { seen[k] = new Set(); order.push(k); } seen[k].add(id); }
-  basket = order.flatMap(k => SIBS[k].filter(id => seen[k].has(id)));
+  const ids = new Set(sections.map(x => x.id));
+  for (const k of order) if (!ids.has(secOf[k])) secOf[k] = defaultSection(k, order.filter(kk => ids.has(secOf[kk])));
+  for (const k of Object.keys(secOf)) if (!seen[k]) delete secOf[k];
+  const sorted = sections.flatMap(x => order.filter(k => secOf[k] === x.id));
+  basket = sorted.flatMap(k => SIBS[k].filter(id => seen[k].has(id)));
 }
 let basket = store.get('basket', []).filter(id => byId[id]);
 normaliseBasket();
-const saveBasket = () => { normaliseBasket(); store.set('basket', basket); $('#basket-count').textContent = basket.length; };
+const saveBasket = () => { normaliseBasket(); store.set('basket', basket); store.set('sections', sections); store.set('secOf', secOf); $('#basket-count').textContent = basket.length; };
+const NUMW = ['', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine', 'ten'];
+// per section: its questions, the effective rule and the marks a candidate can score
+function testStructure() {
+  const groups = groupsOf(basket);
+  return sections.map(sec => {
+    const gs = groups.filter(g => secOf[g.key] === sec.id); const n = gs.length;
+    const choose = sec.choose > 0 && sec.choose < n ? sec.choose : 0;
+    const gm = gs.map(g => g.items.reduce((t, q) => t + q.marks, 0)).sort((a, b) => b - a);
+    return { sec, groups: gs, n, choose, marks: (choose ? gm.slice(0, choose) : gm).reduce((a, b) => a + b, 0), onPaper: gm.reduce((a, b) => a + b, 0) };
+  });
+}
+const testMarks = () => testStructure().reduce((t, x) => t + x.marks, 0);
+const secInstr = x => x.choose ? `Answer ${NUMW[x.choose] || x.choose} question${x.choose > 1 ? 's' : ''} from this section.` : `Answer ${x.n > 1 ? 'all questions' : 'the question'} in this section.`;
+const showSecHeads = struct => struct.filter(x => x.n).length > 1 || struct.some(x => x.choose);
+// the default instruction says 'Answer all questions.', which is wrong once a section offers a choice
+const paperInstr = (instr, struct) => struct.some(x => x.choose) ? instr.replace(/^Answer all questions\.\s*/, 'Answer the questions as instructed in each section. ') : instr;
 
 // ---------- tabs ----------
 function showTab(name) {
@@ -1079,25 +1140,56 @@ function groupsOf(ids) {
 const partLabel = q => q.label.replace(/^\d/, '');
 function renderBuild() {
   const qs = basket.map(id => byId[id]);
-  const marks = qs.reduce((s, q) => s + q.marks, 0);
+  const struct = testStructure(); const marks = testMarks(); const onPaper = struct.reduce((t, x) => t + x.onPaper, 0);
   const groups = groupsOf(basket);
   $('#t-marks').textContent = marks; $('#t-qs').textContent = groups.length; $('#t-parts').textContent = qs.length; $('#t-mins').textContent = marks * 2;
+  $('#t-note').textContent = marks < onPaper ? `Marks and minutes count only the questions a student answers (${onPaper} marks are on the paper).` : '';
   $('#basket-empty').hidden = qs.length > 0; $('#b-clear').hidden = qs.length === 0;
   const cut = (t, n) => t.length > n ? t.slice(0, n) + '…' : t;
-  $('#basket').innerHTML = groups.map((g, gi) => {
+  const secHead = (x, si) => {
+    const opts = `<option value="0"${x.choose ? '' : ' selected'}>Answer all${x.n > 1 ? ` ${x.n} questions` : ''}</option>` +
+      Array.from({ length: Math.max(0, x.n - 1) }, (_, i) => i + 1).map(c => `<option value="${c}"${x.choose === c ? ' selected' : ''}>Answer ${c} of ${x.n}</option>`).join('');
+    return `<div class="b-sec" data-sec="${x.sec.id}"><input class="b-sec-t" value="${esc(x.sec.title)}" aria-label="Section title">
+      <select class="b-sec-r" aria-label="How many questions students answer in this section"${x.n > 1 ? '' : ' disabled'}>${opts}</select>
+      ${sections.length > 1 ? `<button data-s="rmsec" title="Remove this section. Its questions move to the section ${si ? 'above' : 'below'}." aria-label="Remove section">×</button>` : ''}</div>
+      ${x.n ? `<p class="note b-sec-m">${x.marks} mark${x.marks === 1 ? '' : 's'}${x.choose ? ` (students answer ${NUMW[x.choose]} of ${x.n})` : ''}</p>` : '<p class="note b-sec-m">Empty. Move a question here with ↑ ↓ or its section menu.</p>'}`;
+  };
+  const moveSel = g => sections.length > 1 ? `<select class="b-move" aria-label="Move to section">${sections.map(x => `<option value="${x.id}"${secOf[g.key] === x.id ? ' selected' : ''}>${esc(x.title)}</option>`).join('')}</select>` : '';
+  let gi = -1;
+  $('#basket').innerHTML = struct.map((x, si) => (sections.length > 1 || x.choose || x.n > 1 ? secHead(x, si) : '') + x.groups.map(g => { gi++;
     const f = g.items[0]; const all = SIBS[g.key]; const m = g.items.reduce((s, q) => s + q.marks, 0);
     const head = f.section === 'A' ? `Data response · ${f.stimulus_title || ''}` : cut(byId[all[0]].question_text, 110);
     const missing = all.filter(id => !basket.includes(id)).map(id => byId[id]);
     return `<div class="b-group" data-key="${esc(g.key)}">
-      <div class="b-head"><div class="t"><span class="mono">${pname(f.paper_ref)} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}</div>
+      <div class="b-head"><div class="t"><span class="mono">${pname(f.paper_ref)} Q${f.question} · ${all.length > 1 ? `${g.items.length} of ${all.length} parts · ` : ''}[${m}]</span><br>${esc(head)}${moveSel(g)}</div>
         <div class="ctl"><button data-b="up" aria-label="Move question up" ${gi === 0 ? 'disabled' : ''}>↑</button><button data-b="down" aria-label="Move question down" ${gi === groups.length - 1 ? 'disabled' : ''}>↓</button><button data-b="rmq" aria-label="Remove the whole question" title="Remove the whole question">×</button></div></div>
       ${all.length > 1 ? g.items.map(q => `<div class="b-part"><span><span class="mono">${esc(partLabel(q))} [${q.marks}]</span> ${esc(cut(q.question_text, 80))}</span><button data-b="rm" data-id="${q.id}" aria-label="Remove part ${esc(q.label)}" title="Remove this part">×</button></div>`).join('') : ''}
       ${missing.length ? `<div class="b-missing"><span class="note">Not included:</span>${missing.map(q => `<button data-b="addpart" data-id="${q.id}" title="${esc(cut(q.question_text, 120))}">+ ${esc(partLabel(q))} [${q.marks}]</button>`).join('')}</div>` : ''}
     </div>`;
-  }).join('');
+  }).join('')).join('');
+  $('#b-addsec').hidden = !qs.length;
   renderPreview();
 }
+$('#b-addsec').addEventListener('click', () => {
+  sections.push({ id: newSecId(), title: 'Section ' + ('ABCDEFGHIJ'[sections.length] || sections.length + 1), choose: 0 });
+  saveBasket(); renderBuild();
+});
+$('#basket').addEventListener('change', e => {
+  const t = e.target;
+  if (t.classList.contains('b-sec-r')) { sections.find(x => x.id === t.closest('.b-sec').dataset.sec).choose = Number(t.value); saveBasket(); renderBuild(); }
+  if (t.classList.contains('b-move')) { secOf[t.closest('.b-group').dataset.key] = t.value; saveBasket(); renderBuild(); }
+});
+$('#basket').addEventListener('input', e => {
+  const t = e.target; if (!t.classList.contains('b-sec-t')) return;
+  sections.find(x => x.id === t.closest('.b-sec').dataset.sec).title = t.value; store.set('sections', sections); renderPreview();
+});
 $('#basket').addEventListener('click', e => {
+  const rs = e.target.closest('[data-s="rmsec"]');
+  if (rs) {
+    const i = sections.findIndex(x => x.id === rs.closest('.b-sec').dataset.sec); const to = sections[i ? i - 1 : 1].id;
+    for (const k of Object.keys(secOf)) if (secOf[k] === sections[i].id) secOf[k] = to;
+    sections.splice(i, 1); saveBasket(); renderBuild(); return;
+  }
   const b = e.target.closest('[data-b]'); if (!b) return;
   const key = b.closest('.b-group').dataset.key; const act = b.dataset.b;
   if (act === 'rm') basket = basket.filter(id => id !== b.dataset.id);
@@ -1105,14 +1197,17 @@ $('#basket').addEventListener('click', e => {
   if (act === 'rmq') basket = basket.filter(id => qKey(byId[id]) !== key);
   if (act === 'up' || act === 'down') {
     const gs = groupsOf(basket); const i = gs.findIndex(g => g.key === key); const j = act === 'up' ? i - 1 : i + 1;
-    if (j >= 0 && j < gs.length) { [gs[i], gs[j]] = [gs[j], gs[i]]; basket = gs.flatMap(g => g.items.map(q => q.id)); }
+    if (j >= 0 && j < gs.length) {
+      if (secOf[gs[j].key] !== secOf[key]) secOf[key] = secOf[gs[j].key];   // crosses into the next section: join it at the near end
+      else { [gs[i], gs[j]] = [gs[j], gs[i]]; basket = gs.flatMap(g => g.items.map(q => q.id)); }
+    } else if (act === 'up' && i === 0 && sections[0].id !== secOf[key]) secOf[key] = sections[0].id;
   }
   saveBasket(); renderBuild();
 });
 let clearArmed = false;
 $('#b-clear').addEventListener('click', () => {
   if (!clearArmed) { clearArmed = true; $('#b-clear').textContent = 'Click again to remove all'; setTimeout(() => { clearArmed = false; $('#b-clear').textContent = 'Remove all'; }, 3000); return; }
-  clearArmed = false; basket = []; saveBasket(); renderBuild(); $('#b-clear').textContent = 'Remove all';
+  clearArmed = false; basket = []; sections = freshSections(); secOf = {}; saveBasket(); renderBuild(); $('#b-clear').textContent = 'Remove all';
 });
 $('#view-tabs').addEventListener('click', e => {
   const b = e.target.closest('.chipbtn'); if (!b) return;
@@ -1126,13 +1221,15 @@ function details() {
 const niceDate = iso => { if (!iso) return ''; const d = new Date(iso + 'T00:00:00'); return isNaN(d) ? iso : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }); };
 function renderPreview() {
   if (st.tab !== 'build') return;
-  const d = details(); const groups = groupsOf(basket);
-  const marks = basket.reduce((s, id) => s + byId[id].marks, 0);
+  const d = details(); const struct = testStructure(); const heads = showSecHeads(struct);
+  const marks = testMarks();
   if (!basket.length) { $('#preview').innerHTML = '<div class="empty" style="font-family:var(--font-ui)">Your paper will appear here as you add questions.</div>'; return; }
   let h = `<h2>${esc(d.title)}${st.view === 'ms' ? ' · Mark scheme' : ''}</h2><div class="meta">${esc([d.cls, niceDate(d.date), `${marks} marks`, st.view === 'paper' ? `${marks * 2} minutes` : ''].filter(Boolean).join(' · '))}</div>`;
-  if (st.view === 'paper' && d.instr) h += `<p style="font-family:var(--font-ui);font-size:.9rem;margin:0 0 18px">${esc(d.instr)}</p>`;
-  let extractsDone = new Set();
-  groups.forEach((g, gi) => {
+  if (st.view === 'paper' && d.instr) h += `<p style="font-family:var(--font-ui);font-size:.9rem;margin:0 0 18px">${esc(paperInstr(d.instr, struct))}</p>`;
+  let extractsDone = new Set(); let gi = -1;
+  for (const x of struct) { if (!x.n) continue;
+  if (heads) h += `<div class="psec"><h3>${esc(x.sec.title)}</h3>${st.view === 'paper' ? `<p>${esc(secInstr(x))}</p>` : x.choose ? `<p>${esc(secInstr(x))}</p>` : ''}</div>`;
+  x.groups.forEach(g => { gi++;
     const first = g.items[0];
     if (st.view === 'paper' && d.extracts && first.section === 'A' && !extractsDone.has(stimKey(first))) {
       const s = D.stimuli[stimKey(first)] || {};
@@ -1146,18 +1243,76 @@ function renderPreview() {
       if (st.view === 'ms') h += `<div class="ms">${fmt(q.mark_scheme)}${q.examiner_comment ? `<p><i>Examiner report:</i> ${esc(q.examiner_comment)}</p>` : ''}</div>`;
       h += '</div>';
     });
-  });
+  }); }
   if (st.view === 'ms' && basket.some(id => isLevels(byId[id]))) h += `<div class="pq"><b style="font-family:var(--font-ui)">Level descriptors for 12-mark parts</b><div class="extract" style="margin-left:0">${esc(D.levels.A)}\n\n${esc(D.levels.B)}</div></div>`;
   $('#preview').innerHTML = h;
 }
 
 function shuffle(a) { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+// ---- exam-style fill ----
+let aMode = store.get('a-mode', 'exam');
+function setMode(m) {
+  aMode = m; store.set('a-mode', m);
+  $$('#a-mode .chipbtn').forEach(x => x.setAttribute('aria-pressed', String(x.dataset.v === m)));
+  $('#a-mode-exam').hidden = m !== 'exam'; $('#a-mode-marks').hidden = m !== 'marks';
+  $('#a-go').textContent = m === 'exam' ? 'Build exam-style paper' : 'Add questions';
+}
+$('#a-mode').addEventListener('click', e => { const b = e.target.closest('.chipbtn'); if (b) setMode(b.dataset.v); });
+const X = () => ({ dr: +$('#x-dr').value, s: [1, 2].map(i => ({ o: +$('#x-o' + i).value, n: Math.min(+$('#x-n' + i).value, +$('#x-o' + i).value), a: $('#x-a' + i).value })).filter(x => x.o) });
+const PRESETS = { real: [1, 2, 1, 'micro', 2, 1, 'macro'], one: [1, 2, 1, 'any', 0, 1, 'any'], essays: [0, 4, 2, 'any', 0, 1, 'any'] };
+function xSummary() {
+  for (const i of [1, 2]) { const o = +$('#x-o' + i).value; $('#x-n' + i).disabled = $('#x-a' + i).disabled = !o; for (const op of $('#x-n' + i).options) op.disabled = +op.value > o; if (o && +$('#x-n' + i).value > o) $('#x-n' + i).value = String(o); }
+  const x = X(); const parts = [];
+  if (x.dr) parts.push(`${x.dr} data response question${x.dr > 1 ? 's' : ''} (${x.dr * 20} marks)`);
+  x.s.forEach(e => parts.push(`${e.a === 'any' ? '' : e.a + ' '}essays: answer ${e.n} of ${e.o} (${e.n * 20} marks)`));
+  const m = x.dr * 20 + x.s.reduce((t, e) => t + e.n * 20, 0);
+  $('#x-sum').textContent = parts.length ? `Adds ${parts.join('; ')}. ${m} marks to answer. Each question gets its own section.` : 'Choose at least one question.';
+  $$('#x-presets .chipbtn').forEach(b => { const v = PRESETS[b.dataset.p]; b.setAttribute('aria-pressed', String(['x-dr', 'x-o1', 'x-n1', 'x-a1', 'x-o2', 'x-n2', 'x-a2'].every((id, i) => String(v[i]) === $('#' + id).value))); });
+  store.set('x-form', ['x-dr', 'x-o1', 'x-n1', 'x-a1', 'x-o2', 'x-n2', 'x-a2'].map(id => $('#' + id).value));
+}
+function applyPreset(v) { ['x-dr', 'x-o1', 'x-n1', 'x-a1', 'x-o2', 'x-n2', 'x-a2'].forEach((id, i) => { $('#' + id).value = String(v[i]); }); xSummary(); }
+$('#x-presets').addEventListener('click', e => { const b = e.target.closest('[data-p]'); if (b) applyPreset(PRESETS[b.dataset.p]); });
+$('#a-mode-exam').addEventListener('change', xSummary);
+applyPreset(store.get('x-form', PRESETS.real)); setMode(aMode);
+const topicOkC = q => topicMatch(q, covered, coveredMatch);
+// a whole question counts when all its parts fit (or, in 'any' mode, when one does)
+const groupOkC = k => coveredMatch === 'any' ? SIBS[k].some(id => topicOkC(byId[id])) : SIBS[k].every(id => topicOkC(byId[id]));
+function buildExam() {
+  const x = X(); const usable = $('#a-usable').checked; const noRep = $('#a-repeats').checked; const st2 = $('#a-status');
+  if (!x.dr && !x.s.length) { st2.className = 'status err'; st2.textContent = 'Choose at least one question.'; return; }
+  const taken = new Set(basket); const near = new Set(basket.flatMap(id => byId[id].similar_to.map(s2 => s2.id)));
+  const keys = [...new Set(Q.map(qKey))].filter(groupOkC);
+  const pick = (pred, n) => {
+    const out = [];
+    for (const k of shuffle(keys.filter(pred))) {
+      if (out.length >= n) break; const ids = SIBS[k];
+      if (ids.some(id => taken.has(id)) || (usable && ids.some(id => isUnusable(byId[id]))) || (noRep && ids.some(id => near.has(id)))) continue;
+      out.push(k); ids.forEach(id => { taken.add(id); byId[id].similar_to.forEach(s2 => near.add(s2.id)); });
+    }
+    return out;
+  };
+  const plan = [];
+  if (x.dr) plan.push({ want: x.dr, choose: 0, keys: pick(k => isDR(k), x.dr), what: 'data response' });
+  for (const e of x.s) plan.push({ want: e.o, choose: e.n < e.o ? e.n : 0, keys: pick(k => !isDR(k) && (e.a === 'any' || byId[SIBS[k][0]].area === e.a), e.o), what: (e.a === 'any' ? '' : e.a + ' ') + 'essay' });
+  if (!plan.some(p2 => p2.keys.length)) { st2.className = 'status err'; st2.textContent = 'No questions fit. Tick more topics, or choose "Any of its topics is ticked".'; return; }
+  // start from a clean structure when the test is empty, otherwise add new sections after the existing ones
+  if (!basket.length) { sections = []; secOf = {}; }
+  for (const p2 of plan) {
+    if (!p2.keys.length) continue;
+    const id = newSecId(); sections.push({ id, title: 'Section ' + ('ABCDEFGHIJ'[sections.length] || sections.length + 1), choose: p2.choose && p2.choose < p2.keys.length ? p2.choose : 0 });
+    for (const k of p2.keys) { secOf[k] = id; basket.push(...SIBS[k]); }
+  }
+  if (!sections.length) sections = freshSections();
+  saveBasket(); renderBuild();
+  const short = plan.filter(p2 => p2.keys.length < p2.want).map(p2 => `only ${p2.keys.length} of ${p2.want} ${p2.what} question${p2.want > 1 ? 's' : ''} fit`);
+  st2.className = short.length ? 'status err' : 'status ok';
+  st2.textContent = `Added ${plan.filter(p2 => p2.keys.length).length} section${plan.filter(p2 => p2.keys.length).length > 1 ? 's' : ''} (${testMarks()} marks to answer).` + (short.length ? ` Note: ${short.join('; ')} with these topics. Tick more topics or change the match rule.` : '');
+}
 $('#a-go').addEventListener('click', () => {
+  if (aMode === 'exam') { buildExam(); return; }
   const target = Math.max(1, Number($('#a-target').value) || 40);
   const format = $('#a-format').value; const usable = $('#a-usable').checked; const noRep = $('#a-repeats').checked;
-  const topicOk = q => topicMatch(q, covered, coveredMatch);
-  // a whole question counts when all its parts fit (or, in 'any' mode, when one does)
-  const groupOk = k => coveredMatch === 'any' ? SIBS[k].some(id => topicOk(byId[id])) : SIBS[k].every(id => topicOk(byId[id]));
+  const topicOk = topicOkC, groupOk = groupOkC;
   const taken = new Set(basket);
   const near = new Set(basket.flatMap(id => byId[id].similar_to.map(s => s.id)));
   const units = [];
@@ -1239,6 +1394,10 @@ function buildDocx(docx, spec) {
         if (block.er) body.push(P([new TextRun({ text: 'Examiner report: ', bold: true, italics: true, size: 18 }), new TextRun({ text: block.er, italics: true, size: 18 })], { indent: { left: 680 }, after: 60 }));
         body.push(P('', { after: 160 }));
       }
+    } else if (block.type === 'section') {
+      body.push(new Paragraph({ spacing: { before: 240, after: 40 }, keepNext: true, border: { top: { style: BorderStyle.SINGLE, size: 12, color: '000000', space: 6 } },
+        children: [new TextRun({ text: block.title, bold: true, size: 26 })] }));
+      if (block.instr) body.push(P(block.instr, { italics: true, size: 20, after: 200, keepNext: true }));
     } else if (block.type === 'heading') {
       body.push(P(block.text, { bold: true, size: 24, after: 120, keepNext: true }));
     } else if (block.type === 'plain') {
@@ -1258,10 +1417,12 @@ function buildDocx(docx, spec) {
 }
 // DOCX-END
 function docSpec(kind) {
-  const d = details(); const groups = groupsOf(basket);
-  const marks = basket.reduce((s, id) => s + byId[id].marks, 0);
-  const blocks = []; const done = new Set();
-  groups.forEach((g, gi) => {
+  const d = details(); const struct = testStructure(); const heads = showSecHeads(struct);
+  const marks = testMarks();
+  const blocks = []; const done = new Set(); let gi = -1;
+  for (const x of struct) { if (!x.n) continue;
+  if (heads) blocks.push({ type: 'section', title: x.sec.title, instr: kind === 'paper' || x.choose ? secInstr(x) : '' });
+  x.groups.forEach(g => { gi++;
     const first = g.items[0];
     if (kind === 'paper' && d.extracts && first.section === 'A' && !done.has(stimKey(first))) {
       const s = D.stimuli[stimKey(first)] || {};
@@ -1272,13 +1433,13 @@ function docSpec(kind) {
       blocks.push({ type: 'question', num: (qi === 0 ? String(gi + 1) : '') + (pl ? ' ' + pl : ''), text: q.question_text, marks: q.marks, source: `Cambridge ${pname(q.paper_ref)}, Q${q.label}`,
         lines: kind === 'paper' && d.lines ? Math.ceil(q.marks * 1.5) : 0, ms: kind === 'ms' ? q.mark_scheme : '', er: kind === 'ms' ? (q.examiner_comment || '') : '' });
     });
-  });
+  }); }
   if (kind === 'ms' && basket.some(id => isLevels(byId[id]))) { blocks.push({ type: 'heading', text: 'Level descriptors for 12-mark parts' }); blocks.push({ type: 'plain', text: D.levels.A + '\n\n' + D.levels.B }); }
   return {
     title: d.title + (kind === 'ms' ? ' – Mark scheme' : ''),
     subtitle: [d.cls, niceDate(d.date), `${marks} marks`, kind === 'paper' ? `${marks * 2} minutes` : ''].filter(Boolean).join(' · '),
     infoRows: kind === 'paper' ? [[['Name', ''], ['Class', d.cls]], [['Date', niceDate(d.date)], ['Total marks', `      / ${marks}`]]] : [],
-    instructions: kind === 'paper' ? d.instr : '',
+    instructions: kind === 'paper' ? paperInstr(d.instr, struct) : '',
     blocks,
     credit: 'Questions and mark schemes © Cambridge University Press & Assessment (9708 Economics). For internal school use.',
   };
